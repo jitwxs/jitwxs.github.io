@@ -4024,6 +4024,9 @@ _:future,
   margin: 0.3rem 0;
   padding-left: 0.3rem;
 }
+#article-container > :last-child {
+  margin-bottom: 0 !important;
+}
 #post .tag_share .post-meta__tag-list {
   display: inline-block;
 }
