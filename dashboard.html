@@ -1,0 +1,3154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>资产统计监控大盘</title>
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#0FC6C2',
+            success: '#00B42A',
+            warning: '#FF7D00',
+            danger: '#F53F3F',
+            dark: '#1D2129',
+            'dark-2': '#4E5969',
+            'light-1': '#F2F3F5',
+            'light-2': '#E5E6EB',
+          },
+        },
+      }
+    };
+  </script>
+
+  <!-- 页面样式 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .animate-fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+  </style>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+      }
+      .gradient-bg {
+        background: linear-gradient(135deg, #165DFF 0%, #0FC6C2 100%);
+      }
+      .file-drop-area {
+        border: 2px dashed #E5E6EB;
+        transition: all 0.3s ease;
+      }
+      .file-drop-area.active {
+        border-color: #165DFF;
+        background-color: rgba(22, 93, 255, 0.05);
+      }
+    }
+  </style>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    body.theme-dark {
+      background-color: #0b1220;
+      color: #e5e7eb;
+    }
+
+    body.theme-dark .bg-gray-50 {
+      background-color: #0b1220 !important;
+    }
+
+    body.theme-dark .bg-white {
+      background-color: #111827 !important;
+    }
+
+    body.theme-dark .bg-light-1 {
+      background-color: #1f2937 !important;
+    }
+
+    body.theme-dark .bg-light-2 {
+      background-color: #374151 !important;
+    }
+
+    body.theme-dark .text-dark {
+      color: #f3f4f6 !important;
+    }
+
+    body.theme-dark .text-dark-2 {
+      color: #9ca3af !important;
+    }
+
+    body.theme-dark .border-light-2 {
+      border-color: #374151 !important;
+    }
+
+    body.theme-dark .file-drop-area {
+      border-color: #374151;
+    }
+
+    body.theme-dark .file-drop-area.active {
+      background-color: rgba(22, 93, 255, 0.15);
+    }
+
+    body.theme-dark .shadow-md,
+    body.theme-dark .card-shadow {
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 text-dark min-h-screen">
+  <!-- 顶部导航栏 -->
+  <header id="appHeader" class="bg-white shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="container mx-auto px-3 sm:px-4 py-3 flex items-start sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-2 min-w-0">
+        <i class="fa fa-line-chart text-primary text-2xl"></i>
+        <h1 class="text-lg sm:text-xl font-bold text-dark truncate">资产统计监控大盘</h1>
+      </div>
+      
+      <div class="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+        <div class="flex items-center gap-1 bg-light-1 rounded-lg px-2 sm:px-3 py-1.5">
+          <i class="fa fa-calendar text-dark-2"></i>
+          <select id="dateRange" class="bg-transparent border-none outline-none text-xs sm:text-sm max-w-[96px] sm:max-w-none">
+            <option value="90">近季度</option>
+            <option value="180">近半年</option>
+            <option value="365">近一年</option>
+            <option value="730">近两年</option>
+            <option value="all" selected>全部</option>
+          </select>
+        </div>
+        
+        <button id="refreshData" class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-light-1 hover:bg-light-2 text-dark-2 hover:text-primary transition-colors flex items-center justify-center">
+          <i class="fa fa-refresh"></i>
+        </button>
+        
+        <button id="themeToggle" class="flex items-center gap-2 bg-light-1 hover:bg-light-2 rounded-lg px-2.5 sm:px-3 py-1.5 transition-colors">
+          <i id="themeToggleIcon" class="fa fa-moon-o text-dark-2"></i>
+          <span id="themeToggleText" class="hidden md:inline text-sm font-medium text-dark">深色</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="border-t border-light-2">
+      <div class="container mx-auto px-3 sm:px-4 py-3">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div class="text-sm font-medium text-dark-2 whitespace-nowrap">数据导入</div>
+
+          <div id="fileDropArea" class="file-drop-area rounded-lg px-4 py-2 w-full lg:flex-1 text-center cursor-pointer">
+            <input type="file" id="csvFile" accept=".csv" class="hidden" />
+            <p class="text-dark-2 text-sm">
+              <i class="fa fa-cloud-upload text-primary/70 mr-1"></i>
+              拖放 CSV 文件到此处，或<span class="text-primary font-medium">点击上传</span>
+            </p>
+          </div>
+
+          <div class="flex gap-2 sm:gap-3 w-full lg:w-auto">
+            <button id="useSampleData" class="bg-light-1 hover:bg-light-2 text-dark px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 lg:flex-none">
+              <i class="fa fa-database mr-2"></i>使用示例数据
+            </button>
+            <button id="clearData" class="bg-danger/10 hover:bg-danger/20 text-danger px-4 py-2 rounded-lg transition-colors flex items-center justify-center flex-1 lg:flex-none">
+              <i class="fa fa-trash mr-2"></i>清空数据
+            </button>
+          </div>
+        </div>
+        <div id="importStatus" class="mt-3 hidden"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main id="mainContent" class="container mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
+    
+    <!-- 概览卡片 -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8" id="overviewCards">
+      <!-- 卡片内容由JS动态生成 -->
+    </section>
+    
+    <!-- 主要趋势图 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow lg:col-span-2">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+          <h2 class="text-lg font-bold">资产趋势</h2>
+          <div class="flex flex-nowrap overflow-x-auto no-scrollbar pb-1 gap-2" id="assetFilters">
+            <!-- 筛选按钮由JS动态生成 -->
+          </div>
+        </div>
+        <div class="h-[260px] sm:h-[320px] lg:h-[350px]">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">资产占比分布</h2>
+          <button id="distributionDetailBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+            <span>详情</span>
+            <i class="fa fa-angle-right ml-1"></i>
+          </button>
+        </div>
+        <div class="h-[260px] sm:h-[320px] lg:h-[350px] flex items-center justify-center">
+          <canvas id="distributionChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 分类分析 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">分类资产占比</h2>
+          <button id="categoryDistributionDetailBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+            <span>详情</span>
+            <i class="fa fa-angle-right ml-1"></i>
+          </button>
+        </div>
+        <div class="h-[240px] sm:h-[280px] lg:h-[300px] flex items-center justify-center">
+          <canvas id="categoryDistributionChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow lg:col-span-2">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold">分类资产趋势</h2>
+          <span class="text-xs text-dark-2">按日期范围同步</span>
+        </div>
+        <div class="h-[240px] sm:h-[280px] lg:h-[300px]">
+          <canvas id="categoryTrendChart"></canvas>
+        </div>
+        <div id="categoryMappingHint" class="mt-4 text-xs text-dark-2"></div>
+      </div>
+    </section>
+
+    <!-- 国内海外占比趋势 -->
+    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-bold">国内海外占比趋势</h2>
+        <span class="text-xs text-dark-2">按日期范围同步</span>
+      </div>
+      <div class="h-[300px] sm:h-[350px]">
+        <canvas id="domesticOverseasTrendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 每月资产变化趋势 -->
+    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-bold">每月资产变化趋势</h2>
+        <span class="text-xs text-dark-2">按日期范围同步</span>
+      </div>
+      <div class="h-[300px] sm:h-[350px]">
+        <canvas id="monthlyIncreaseTrendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 资产分类流向 -->
+    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-bold">资产分类流向</h2>
+        <span class="text-xs text-dark-2">资产 -> 分类</span>
+      </div>
+      <div id="assetCategorySankey" class="h-[280px] sm:h-[320px] lg:h-[360px]"></div>
+    </section>
+    
+    <!-- 次要图表和表格 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">资产收益率排行</h2>
+          <select class="text-sm border-none bg-light-1 rounded px-2 py-1 outline-none" id="returnRatePeriod">
+            <option value="all">全部周期</option>
+            <option value="90">近季度</option>
+            <option value="180">近半年</option>
+            <option value="365">近一年</option>
+            <option value="730">近两年</option>
+          </select>
+        </div>
+        <div class="h-[240px] sm:h-[280px] lg:h-[300px]">
+          <canvas id="returnRateChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">分类贡献度（近30天）</h2>
+          <span id="netIncrease30dBadge" class="text-xs bg-success/10 text-success px-2 py-1 rounded-full">--</span>
+        </div>
+        <div class="h-[240px] sm:h-[280px] lg:h-[300px] relative">
+          <canvas id="categoryContributionChart"></canvas>
+          <div id="categoryContributionEmpty" class="hidden absolute inset-0 flex items-center justify-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-2"></i> 近30天数据不足，无法计算分类贡献度
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg font-bold">资产详情</h2>
+          <button id="viewAllAssetsBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+            <span>查看全部</span>
+            <i class="fa fa-angle-right ml-1"></i>
+          </button>
+        </div>
+        <div id="assetTableBody" class="max-h-[300px] overflow-y-auto pr-2">
+          <!-- 排行榜内容由JS动态生成 -->
+        </div>
+      </div>
+    </section>
+    
+    <!-- 最近异动 -->
+    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-bold">资产最近异动</h2>
+        <button id="historyChangesBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+          <span>查看历史</span>
+          <i class="fa fa-history ml-1"></i>
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" id="recentChanges">
+        <!-- 异动内容由JS动态生成 -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-light-2 py-6">
+    <div class="container mx-auto px-3 sm:px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <p class="text-dark-2 text-sm" id="footerCopyright">© 2023 资产统计监控系统. 保留所有权利.</p>
+        </div>
+        <div class="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6">
+          <a href="#" class="text-dark-2 hover:text-primary transition-colors">
+            <i class="fa fa-question-circle"></i>
+            <span class="ml-1 text-sm">帮助中心</span>
+          </a>
+          <a href="#" class="text-dark-2 hover:text-primary transition-colors">
+            <i class="fa fa-file-text-o"></i>
+            <span class="ml-1 text-sm">使用文档</span>
+          </a>
+          <a href="#" class="text-dark-2 hover:text-primary transition-colors">
+            <i class="fa fa-envelope-o"></i>
+            <span class="ml-1 text-sm">联系我们</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 历史异动悬浮窗 -->
+  <div id="historyChangesModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[80vh] overflow-auto">
+      <div class="flex justify-between items-center p-4 sm:p-6 border-b border-light-2">
+        <h3 class="text-lg sm:text-xl font-bold">资产历史异动</h3>
+        <button id="closeHistoryModalBtn" class="text-dark-2 hover:text-dark transition-colors">
+          <i class="fa fa-times text-lg"></i>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="mb-4">
+          <label for="historyDays" class="text-sm font-medium text-dark-2 mr-2">选择天数:</label>
+          <select id="historyDays" class="text-sm border-none bg-light-1 rounded px-2 py-1 outline-none">
+            <option value="90">近季度</option>
+            <option value="180">近半年</option>
+            <option value="365">近一年</option>
+            <option value="730">近两年</option>
+            <option value="all" selected>全部</option>
+          </select>
+        </div>
+        <div id="historyChangesContainer" class="space-y-3 max-h-[64vh] sm:max-h-[60vh] overflow-y-auto pr-1 sm:pr-2">
+          <!-- 历史异动内容由JS动态生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资产占比分布详情悬浮窗 -->
+  <div id="distributionDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[80vh] overflow-auto">
+      <div class="flex justify-between items-center p-4 sm:p-6 border-b border-light-2">
+        <h3 class="text-lg sm:text-xl font-bold">资产占比分布详情</h3>
+        <button id="closeModalBtn" class="text-dark-2 hover:text-dark transition-colors">
+          <i class="fa fa-times text-lg"></i>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6">
+          <div class="h-[220px] sm:h-[300px]">
+            <canvas id="detailDistributionChart"></canvas>
+          </div>
+          <div>
+            <h4 class="text-sm font-medium text-dark-2 mb-3">资产占比明细</h4>
+            <div id="assetDistributionDetails" class="space-y-3 max-h-[45vh] sm:max-h-[300px] overflow-y-auto pr-1 sm:pr-2">
+              <!-- 明细内容由JS动态生成 -->
+            </div>
+          </div>
+        </div>
+        <div class="bg-light-1 p-4 rounded-lg">
+          <h4 class="text-sm font-medium text-dark-2 mb-2">说明</h4>
+          <p class="text-sm text-dark-2">本数据基于所选日期范围内的最新数据计算。资产占比反映了各资产在投资组合中的相对权重。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分类资产占比详情悬浮窗 -->
+  <div id="categoryDistributionDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[80vh] overflow-auto">
+      <div class="flex justify-between items-center p-4 sm:p-6 border-b border-light-2">
+        <h3 class="text-lg sm:text-xl font-bold">分类资产占比详情</h3>
+        <button id="closeCategoryModalBtn" class="text-dark-2 hover:text-dark transition-colors">
+          <i class="fa fa-times text-lg"></i>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6">
+          <div class="h-[220px] sm:h-[300px]">
+            <canvas id="categoryDetailDistributionChart"></canvas>
+          </div>
+          <div>
+            <h4 class="text-sm font-medium text-dark-2 mb-3">分类占比明细</h4>
+            <div id="categoryDistributionDetails" class="space-y-3 max-h-[45vh] sm:max-h-[300px] overflow-y-auto pr-1 sm:pr-2">
+              <!-- 明细内容由JS动态生成 -->
+            </div>
+          </div>
+        </div>
+        <div class="bg-light-1 p-4 rounded-lg">
+          <h4 class="text-sm font-medium text-dark-2 mb-2">说明</h4>
+          <p class="text-sm text-dark-2">按所选日期范围的最新数据聚合分类，未配置资产自动归类为“其他”。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资产详情悬浮窗 -->
+  <div id="assetDetailsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[80vh] overflow-auto">
+      <div class="flex justify-between items-center p-4 sm:p-6 border-b border-light-2">
+        <h3 class="text-lg sm:text-xl font-bold">资产详情</h3>
+        <button id="closeAssetDetailsModalBtn" class="text-dark-2 hover:text-dark transition-colors">
+          <i class="fa fa-times text-lg"></i>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="mb-4">
+          <label for="assetDetailsDays" class="text-sm font-medium text-dark-2 mr-2">选择天数:</label>
+          <select id="assetDetailsDays" class="text-sm border-none bg-light-1 rounded px-2 py-1 outline-none">
+            <option value="90">近季度</option>
+            <option value="180">近半年</option>
+            <option value="365">近一年</option>
+            <option value="730">近两年</option>
+            <option value="all" selected>全部</option>
+          </select>
+        </div>
+        <div id="assetDetailsContainer" class="space-y-3 max-h-[64vh] sm:max-h-[60vh] overflow-y-auto pr-1 sm:pr-2">
+          <!-- 资产详情内容由JS动态生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // 全局变量存储当前数据
+    let currentData = [];
+    let assetNames = [];
+    let dates = [];
+    let trendChart = null;
+    let distributionChart = null;
+    let returnRateChart = null;
+    let categoryDistributionChart = null;
+    let categoryTrendChart = null;
+    let categoryDetailDistributionChart = null;
+    let categoryContributionChart = null;
+    let assetCategorySankeyChart = null;
+    let domesticOverseasTrendChart = null;
+    let monthlyIncreaseTrendChart = null;
+    let activeTrendFilter = 'total';
+    let assetCategoryMap = {};
+    let domesticOverseasMap = {};
+    const defaultAssetCategoryMap = {
+      '信银国际': '银行类',
+      '中信银行': '银行类',
+      '招商银行': '银行类',
+      '工商银行': '银行类',
+      '南京银行': '银行类',
+      '交通银行': '银行类',
+      '恒丰银行': '银行类',
+      '江苏银行': '银行类',
+      '温州银行': '银行类',
+      '汇丰银行': '银行类',
+      'OKX': '投资类',
+      '富途牛牛': '投资类',
+      '微信': '移动支付',
+      '支付宝': '移动支付',
+      '公积金': '公积金'
+    };
+    
+    // 国内资产和海外资产分类
+    const defaultDomesticOverseasMap = {
+      '信银国际': '海外资产',
+      '汇丰银行': '海外资产',
+      'OKX': '海外资产',
+      '富途牛牛': '海外资产',
+      '中信银行': '国内资产',
+      '招商银行': '国内资产',
+      '工商银行': '国内资产',
+      '南京银行': '国内资产',
+      '交通银行': '国内资产',
+      '恒丰银行': '国内资产',
+      '江苏银行': '国内资产',
+      '温州银行': '国内资产',
+      '微信': '国内资产',
+      '支付宝': '国内资产',
+      '公积金': '国内资产'
+    };
+    
+    // 示例数据
+    const sampleCsvData = `日期,科技A,金融B,地产C,能源D,医疗E,消费F,制造G,农业H
+2023-01-15,25000,32000,18000,15000,28000,22000,19000,12000
+2023-02-15,26500,31500,17800,15800,29500,22800,19500,12500
+2023-03-15,27200,33000,17500,16500,31000,23500,20000,12300
+2023-04-15,28000,34500,17200,17200,32500,24200,20800,12800
+2023-05-15,29500,33800,16900,18000,34000,25000,21500,13200
+2023-06-15,31000,35200,16500,18800,35500,25800,22200,13500
+2023-07-15,32500,36800,16200,19500,37000,26500,23000,13800
+`;
+
+    function getDataAnchorDate() {
+      if (currentData.length === 0) {
+        return new Date();
+      }
+      const lastRow = currentData[currentData.length - 1];
+      const anchorDate = new Date(lastRow['日期']);
+      return Number.isNaN(anchorDate.getTime()) ? new Date() : anchorDate;
+    }
+
+    function syncMainOffset() {
+      const header = document.getElementById('appHeader');
+      const main = document.getElementById('mainContent');
+      if (!header || !main) return;
+      main.style.paddingTop = `${header.offsetHeight + 16}px`;
+    }
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+      // 绑定文件上传事件
+      const fileDropArea = document.getElementById('fileDropArea');
+      const csvFileInput = document.getElementById('csvFile');
+      const themeToggle = document.getElementById('themeToggle');
+
+      initTheme();
+      syncMainOffset();
+      if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+      }
+
+      loadAssetCategories();
+
+      // 初始加载示例数据
+      setTimeout(() => {
+        document.getElementById('useSampleData').click();
+      }, 500);
+      
+      // 点击上传区域触发文件选择
+      fileDropArea.addEventListener('click', () => csvFileInput.click());
+      
+      // 拖放功能
+      fileDropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileDropArea.classList.add('active');
+      });
+      
+      fileDropArea.addEventListener('dragleave', () => {
+        fileDropArea.classList.remove('active');
+      });
+      
+      fileDropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileDropArea.classList.remove('active');
+        
+        if (e.dataTransfer.files.length) {
+          csvFileInput.files = e.dataTransfer.files;
+          handleFileUpload(csvFileInput.files[0]);
+        }
+      });
+      
+      // 文件选择变化时处理
+      csvFileInput.addEventListener('change', () => {
+        if (csvFileInput.files.length) {
+          handleFileUpload(csvFileInput.files[0]);
+        }
+      });
+      
+      // 使用示例数据按钮
+      document.getElementById('useSampleData').addEventListener('click', () => {
+        showImportStatus('正在加载示例数据...', 'info');
+        setTimeout(() => {
+          const data = parseCsv(sampleCsvData);
+          if (data) {
+            currentData = data;
+            processAndRenderData();
+            showImportStatus('示例数据加载成功', 'success');
+          } else {
+            showImportStatus('示例数据加载失败', 'error');
+          }
+        }, 500);
+      });
+      
+      // 清空数据按钮
+      document.getElementById('clearData').addEventListener('click', () => {
+        if (confirm('确定要清空当前数据吗？')) {
+          currentData = [];
+          clearAllCharts();
+          document.getElementById('overviewCards').innerHTML = '';
+          document.getElementById('assetFilters').innerHTML = '';
+          document.getElementById('assetTableBody').innerHTML = '';
+          document.getElementById('recentChanges').innerHTML = '';
+          document.getElementById('netIncrease30dBadge').textContent = '--';
+          document.getElementById('categoryMappingHint').textContent = '';
+          updateFooterYearRange();
+          showImportStatus('数据已清空', 'info');
+        }
+      });
+      
+      // 刷新数据按钮
+      document.getElementById('refreshData').addEventListener('click', () => {
+        if (currentData.length > 0) {
+          showImportStatus('正在刷新数据...', 'info');
+          setTimeout(() => {
+            processAndRenderData();
+            showImportStatus('数据刷新成功', 'success');
+          }, 500);
+        } else {
+          showImportStatus('没有数据可刷新，请先导入数据或使用示例数据', 'warning');
+        }
+      });
+      
+      // 日期范围筛选
+      document.getElementById('dateRange').addEventListener('change', updateChartsByDateRange);
+      
+      // 收益率周期筛选
+      document.getElementById('returnRatePeriod').addEventListener('change', updateReturnRateChart);
+      
+      // 资产详情查看全部按钮
+      const viewAllAssetsBtn = document.getElementById('viewAllAssetsBtn');
+      // 点击事件已经在下方通过onclick绑定
+      if (viewAllAssetsBtn) {
+        // 已通过onclick绑定事件
+      }
+      
+      updateFooterYearRange();
+
+      // 窗口大小变化时重绘图表
+      window.addEventListener('resize', function() {
+        syncMainOffset();
+        if (trendChart) trendChart.resize();
+        if (distributionChart) distributionChart.resize();
+        if (categoryDistributionChart) categoryDistributionChart.resize();
+        if (categoryTrendChart) categoryTrendChart.resize();
+        if (domesticOverseasTrendChart) domesticOverseasTrendChart.resize();
+        if (monthlyIncreaseTrendChart) monthlyIncreaseTrendChart.resize();
+        if (categoryContributionChart) categoryContributionChart.resize();
+        if (assetCategorySankeyChart) assetCategorySankeyChart.resize();
+        if (returnRateChart) returnRateChart.resize();
+      });
+      window.addEventListener('load', syncMainOffset);
+    });
+    
+    // 处理文件上传
+    function handleFileUpload(file) {
+      if (!file.name.endsWith('.csv')) {
+        showImportStatus('请上传CSV格式的文件', 'error');
+        return;
+      }
+      
+      showImportStatus('正在解析文件...', 'info');
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const data = parseCsv(event.target.result);
+          if (data && data.length > 0) {
+            currentData = data;
+            processAndRenderData();
+            showImportStatus(`文件导入成功，共 ${data.length} 条记录`, 'success');
+          } else {
+            showImportStatus('CSV文件格式不正确', 'error');
+          }
+        } catch (error) {
+          showImportStatus('解析文件时出错: ' + error.message, 'error');
+          console.error(error);
+        }
+      };
+      
+      reader.onerror = function() {
+        showImportStatus('读取文件时出错', 'error');
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // 显示导入状态
+    function showImportStatus(message, type = 'info') {
+      const statusEl = document.getElementById('importStatus');
+      statusEl.className = '';
+      
+      let icon, colorClass;
+      switch (type) {
+        case 'success':
+          icon = 'fa-check-circle';
+          colorClass = 'text-success bg-success/10';
+          break;
+        case 'error':
+          icon = 'fa-exclamation-circle';
+          colorClass = 'text-danger bg-danger/10';
+          break;
+        case 'warning':
+          icon = 'fa-exclamation-triangle';
+          colorClass = 'text-warning bg-warning/10';
+          break;
+        default:
+          icon = 'fa-info-circle';
+          colorClass = 'text-primary bg-primary/10';
+      }
+      
+      statusEl.className = `flex items-center px-4 py-2 rounded-lg ${colorClass} animate-fade-in`;
+      statusEl.innerHTML = `<i class="fa ${icon} mr-2"></i><span>${message}</span>`;
+      statusEl.classList.remove('hidden');
+      syncMainOffset();
+      
+      // 3秒后自动隐藏成功和信息提示
+      if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+          statusEl.classList.add('hidden');
+          syncMainOffset();
+        }, 3000);
+      }
+    }
+    
+    function loadAssetCategories() {
+      assetCategoryMap = buildNormalizedCategoryMap(defaultAssetCategoryMap);
+      domesticOverseasMap = buildNormalizedCategoryMap(defaultDomesticOverseasMap);
+      if (currentData.length > 0) {
+        processAndRenderData();
+      }
+    }
+
+    // 解析CSV数据
+    function parseCsv(csv) {
+      // 分割并过滤空行和纯空格行
+      const lines = csv.split('\n')
+        .map(line => line.trim())
+        .filter(line => line !== '');
+      
+      if (lines.length < 2) return null;
+      
+      const headers = lines[0].split(',').map(header => header.trim());
+      if (headers.length < 2 || headers[0] !== '日期') return null;
+      
+      const result = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(value => value.trim());
+        // 跳过列数不匹配的行
+        if (values.length !== headers.length) continue;
+        
+        const row = {};
+        let valid = true;
+        
+        for (let j = 0; j < headers.length; j++) {
+          if (j === 0) {
+            // 日期格式简单验证
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(values[j])) {
+              valid = false;
+              break;
+            }
+            row[headers[j]] = values[j];
+          } else {
+            // 数值验证
+            const num = parseFloat(values[j]);
+            if (isNaN(num)) {
+              valid = false;
+              break;
+            }
+            row[headers[j]] = num;
+          }
+        }
+        
+        if (valid) {
+          result.push(row);
+        }
+      }
+      
+      return result.length > 0 ? result : null;
+    }
+    
+    // 处理并渲染所有数据
+    function processAndRenderData() {
+      if (currentData.length === 0) return;
+      
+      // 提取资产名称和日期
+      assetNames = Object.keys(currentData[0]).filter(key => key !== '日期');
+      dates = currentData.map(row => row['日期']);
+      
+      // 计算关键指标
+      const totalAssetValue = calculateTotalAssetValue();
+      const returnRates = calculateReturnRates();
+      
+      // 渲染概览卡片
+      renderOverviewCards(totalAssetValue, returnRates);
+      
+      // 渲染资产筛选按钮
+      renderAssetFilters();
+      
+      // 渲染图表
+      renderTrendChart();
+      renderDistributionChart();
+      renderCategoryDistributionChart();
+      renderCategoryTrendChart();
+      renderDomesticOverseasTrendChart();
+      renderMonthlyIncreaseTrendChart();
+      renderCategoryContributionChart30Days();
+      renderAssetCategorySankey();
+      renderReturnRateChart();
+      
+      // 渲染资产详情表格
+      renderAssetTable();
+      
+      // 生成最近异动
+      generateRecentChanges();
+
+      // 更新页脚年份
+      updateFooterYearRange();
+    }
+    
+    // 计算资产总价值
+    function calculateTotalAssetValue() {
+      if (currentData.length === 0) return 0;
+      const lastRow = currentData[currentData.length - 1];
+      let total = 0;
+      
+      for (const key in lastRow) {
+        if (key !== '日期') {
+          total += lastRow[key];
+        }
+      }
+      
+      return total;
+    }
+    
+    // 计算资产收益率
+    function calculateReturnRates() {
+      // 至少需要2条数据才能计算收益率
+      if (currentData.length < 2) return {};
+      
+      const firstRow = currentData[0];
+      const lastRow = currentData[currentData.length - 1];
+      const returnRates = {};
+      
+      for (const key in firstRow) {
+        if (key !== '日期') {
+          const startValue = firstRow[key];
+          const endValue = lastRow[key];
+          // 避免除以0
+          if (startValue === 0) {
+            returnRates[key] = '0.00';
+            continue;
+          }
+          returnRates[key] = ((endValue - startValue) / startValue * 100).toFixed(2);
+        }
+      }
+      
+      return returnRates;
+    }
+    
+    // 渲染概览卡片
+    function renderOverviewCards(totalAssetValue, returnRates) {
+      const container = document.getElementById('overviewCards');
+      container.innerHTML = '';
+      
+      // 计算平均收益率
+      const returnRateValues = Object.values(returnRates).map(Number);
+      const avgReturnRate = returnRateValues.length > 0 
+        ? (returnRateValues.reduce((sum, rate) => sum + rate, 0) / returnRateValues.length).toFixed(1)
+        : '0.0';
+      
+      // 计算资产集中度（Top3占比）
+      let top3Concentration = 0;
+      let domesticAssetRatio = 0;
+      if (currentData.length > 0) {
+        const lastRow = currentData[currentData.length - 1];
+        const latestValues = assetNames.map(asset => Number(lastRow[asset] || 0));
+        const total = latestValues.reduce((sum, val) => sum + val, 0);
+        if (total > 0) {
+          const top3Total = [...latestValues].sort((a, b) => b - a).slice(0, 3).reduce((sum, val) => sum + val, 0);
+          top3Concentration = (top3Total / total) * 100;
+          
+          // 计算国内资产占比
+          const domesticOverseasSnapshot = buildDomesticOverseasSnapshot(lastRow);
+          domesticAssetRatio = (domesticOverseasSnapshot['国内资产'] / total) * 100;
+        }
+      }
+
+      // 计算平均每月资产增加数额（基于最新两条记录）和年化资产增速
+      let avgMonthlyIncrease = 0;
+      let annualGrowthRate = 0;
+      if (currentData.length >= 2) {
+        const lastRow = currentData[currentData.length - 1];
+        const prevRow = currentData[currentData.length - 2];
+        const latestTotal = assetNames.reduce((sum, asset) => sum + (lastRow[asset] || 0), 0);
+        const prevTotal = assetNames.reduce((sum, asset) => sum + (prevRow[asset] || 0), 0);
+        const latestDate = new Date(lastRow['日期']);
+        const prevDate = new Date(prevRow['日期']);
+        const monthMs = 1000 * 60 * 60 * 24 * 30.4375;
+        const latestElapsedMonths = (latestDate - prevDate) / monthMs;
+
+        if (latestElapsedMonths > 0) {
+          avgMonthlyIncrease = (latestTotal - prevTotal) / latestElapsedMonths;
+        }
+
+        // 年化增速仍基于全区间起止数据
+        const firstRow = currentData[0];
+        const startTotal = assetNames.reduce((sum, asset) => sum + (firstRow[asset] || 0), 0);
+        const startDate = new Date(firstRow['日期']);
+        const fullElapsedMonths = (latestDate - startDate) / monthMs;
+        if (startTotal > 0 && fullElapsedMonths > 0) {
+          annualGrowthRate = (Math.pow(latestTotal / startTotal, 12 / fullElapsedMonths) - 1) * 100;
+        }
+      }
+      
+      // 总资产价值卡片
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-dark-2 text-sm">总资产价值</p>
+              <h3 class="text-xl sm:text-2xl font-bold mt-1 break-all">¥${totalAssetValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center">
+              <i class="fa fa-money text-white"></i>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <span class="text-success text-sm flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i>${avgReturnRate}%
+            </span>
+            <span class="text-dark-2 text-xs ml-2">平均收益率</span>
+          </div>
+        </div>
+      `;
+      
+      // 资产数量卡片
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-dark-2 text-sm">资产数量</p>
+              <h3 class="text-xl sm:text-2xl font-bold mt-1">${assetNames.length}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <i class="fa fa-pie-chart text-primary"></i>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <span class="text-primary text-sm flex items-center">
+              <i class="fa fa-percent mr-1"></i>${top3Concentration.toFixed(1)}%
+            </span>
+            <span class="text-dark-2 text-xs ml-2">资产集中度 (Top3 占比)</span>
+          </div>
+        </div>
+      `;
+      
+      // 平均每月资产增加数额卡片（包含年化资产增速）
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-dark-2 text-sm">平均每月资产增加数额</p>
+              <h3 class="text-xl sm:text-2xl font-bold mt-1 break-all">¥${avgMonthlyIncrease.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+              <i class="fa fa-calendar-plus-o text-success"></i>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <span class="text-dark-2 text-sm">年化资产增速：</span>
+            <span class="${annualGrowthRate >= 0 ? 'text-success' : 'text-danger'} text-sm font-medium ml-2 flex items-center">
+              <i class="fa ${annualGrowthRate >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} mr-1"></i>${annualGrowthRate.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+      `;
+      
+      // 国内资产占比卡片
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-dark-2 text-sm">国内资产占比</p>
+              <h3 class="text-xl sm:text-2xl font-bold mt-1">${domesticAssetRatio.toFixed(2)}%</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <i class="fa fa-pie-chart text-primary"></i>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <span class="text-primary text-sm flex items-center">
+              <i class="fa fa-percent mr-1"></i>${domesticAssetRatio.toFixed(2)}%
+            </span>
+            <span class="text-dark-2 text-xs ml-2">最新记录国内资产占比</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    // 渲染资产筛选按钮
+    function renderAssetFilters() {
+      const container = document.getElementById('assetFilters');
+      container.innerHTML = '';
+      
+      // 全部（总资产）按钮：仅显示一条汇总线
+      const totalBtn = document.createElement('button');
+      totalBtn.className = 'asset-filter px-3 py-1.5 text-xs sm:text-sm rounded-full bg-light-1 text-dark-2 hover:bg-primary/10 transition-colors whitespace-nowrap shrink-0';
+      totalBtn.setAttribute('data-asset', 'total');
+      totalBtn.textContent = '全部';
+      totalBtn.addEventListener('click', handleAssetFilter);
+      container.appendChild(totalBtn);
+
+      // 所有条线按钮：显示每个资产的独立曲线
+      const allLinesBtn = document.createElement('button');
+      allLinesBtn.className = 'asset-filter px-3 py-1.5 text-xs sm:text-sm rounded-full bg-light-1 text-dark-2 hover:bg-primary/10 transition-colors whitespace-nowrap shrink-0';
+      allLinesBtn.setAttribute('data-asset', 'all');
+      allLinesBtn.textContent = '所有条线';
+      allLinesBtn.addEventListener('click', handleAssetFilter);
+      container.appendChild(allLinesBtn);
+      
+      // 最多显示5个资产按钮，其余用更多按钮
+      const displayCount = Math.min(5, assetNames.length);
+      for (let i = 0; i < displayCount; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'asset-filter px-3 py-1.5 text-xs sm:text-sm rounded-full bg-light-1 text-dark-2 hover:bg-primary/10 transition-colors whitespace-nowrap shrink-0';
+        btn.setAttribute('data-asset', assetNames[i]);
+        btn.textContent = assetNames[i];
+        btn.addEventListener('click', handleAssetFilter);
+        container.appendChild(btn);
+      }
+      
+      // 如果资产数量超过5个，添加更多按钮（下拉选择框）
+      if (assetNames.length > 5) {
+        const selectWrapper = document.createElement('div');
+        selectWrapper.className = 'relative flex-shrink-0';
+        
+        const select = document.createElement('select');
+        select.className = 'asset-select text-xs sm:text-sm rounded-full bg-light-1 text-dark-2 border-none outline-none cursor-pointer py-1.5 px-3';
+        select.style.minWidth = '80px';
+        
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '更多...';
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        select.appendChild(defaultOption);
+        
+        for (let i = 5; i < assetNames.length; i++) {
+          const option = document.createElement('option');
+          option.value = assetNames[i];
+          option.textContent = assetNames[i];
+          select.appendChild(option);
+        }
+        
+        selectWrapper.appendChild(select);
+        container.appendChild(selectWrapper);
+        
+        select.addEventListener('change', function() {
+          if (this.value) {
+            handleAssetFilterByAsset(this.value);
+          }
+          this.selectedIndex = 0;
+        });
+      }
+
+      const availableFilters = new Set(['total', 'all', ...assetNames]);
+      if (!availableFilters.has(activeTrendFilter)) {
+        activeTrendFilter = 'total';
+      }
+
+      // 刷新按钮后保持当前筛选选中态
+      document.querySelectorAll('.asset-filter').forEach(btn => {
+        const isActive = btn.getAttribute('data-asset') === activeTrendFilter;
+        btn.classList.toggle('bg-primary', isActive);
+        btn.classList.toggle('text-white', isActive);
+        if (isActive) {
+          btn.classList.remove('bg-light-1', 'text-dark-2', 'hover:bg-primary/10');
+        }
+      });
+      
+      // 处理下拉框的选中状态
+      const selectEl = document.querySelector('.asset-select');
+      if (selectEl) {
+        let isInDropdown = false;
+        for (let i = 1; i < selectEl.options.length; i++) {
+          if (selectEl.options[i].value === activeTrendFilter) {
+            isInDropdown = true;
+            break;
+          }
+        }
+        if (isInDropdown) {
+          selectEl.value = activeTrendFilter;
+          selectEl.style.backgroundColor = '#165DFF';
+          selectEl.style.color = '#ffffff';
+        } else {
+          selectEl.selectedIndex = 0;
+          selectEl.style.backgroundColor = '';
+          selectEl.style.color = '';
+        }
+      }
+    }
+    
+    // 处理资产筛选
+    function handleAssetFilter() {
+      activeTrendFilter = this.getAttribute('data-asset');
+
+      // 更新按钮样式
+      document.querySelectorAll('.asset-filter').forEach(btn => {
+        btn.classList.remove('bg-primary', 'text-white');
+        btn.classList.add('bg-light-1', 'text-dark-2', 'hover:bg-primary/10');
+      });
+      this.classList.remove('bg-light-1', 'text-dark-2', 'hover:bg-primary/10');
+      this.classList.add('bg-primary', 'text-white');
+
+      // 重置下拉框样式
+      const selectEl = document.querySelector('.asset-select');
+      if (selectEl) {
+        selectEl.style.backgroundColor = '';
+        selectEl.style.color = '';
+        selectEl.selectedIndex = 0;
+      }
+
+      if (trendChart) {
+        const filteredData = getFilteredDataByDateRange();
+        applyTrendFilter(filteredData);
+        trendChart.data.labels = filteredData.map(row => row['日期']);
+        trendChart.update();
+      }
+    }
+    
+    // 通过资产名称处理资产筛选（下拉框使用）
+    function handleAssetFilterByAsset(assetName) {
+      activeTrendFilter = assetName;
+
+      // 更新按钮样式
+      document.querySelectorAll('.asset-filter').forEach(btn => {
+        btn.classList.remove('bg-primary', 'text-white');
+        btn.classList.add('bg-light-1', 'text-dark-2', 'hover:bg-primary/10');
+      });
+      
+      // 更新下拉框样式
+      const selectEl = document.querySelector('.asset-select');
+      if (selectEl) {
+        selectEl.style.backgroundColor = '#165DFF';
+        selectEl.style.color = '#ffffff';
+      }
+
+      if (trendChart) {
+        const filteredData = getFilteredDataByDateRange();
+        applyTrendFilter(filteredData);
+        trendChart.data.labels = filteredData.map(row => row['日期']);
+        trendChart.update();
+      }
+    }
+    
+    // 获取按日期范围筛选后的数据
+    function getFilteredDataByDateRange() {
+      const days = document.getElementById('dateRange').value;
+      
+      if (days === 'all') {
+        return [...currentData];
+      }
+      
+      // 计算起始日期
+      const anchorDate = getDataAnchorDate();
+      const startDate = new Date(anchorDate);
+      startDate.setDate(anchorDate.getDate() - parseInt(days, 10));
+      
+      // 筛选出日期大于等于起始日期的数据
+      return currentData.filter(row => {
+        const rowDate = new Date(row['日期']);
+        return rowDate >= startDate;
+      });
+    }
+    
+    // 根据日期范围更新图表
+    function updateChartsByDateRange() {
+      const filteredData = getFilteredDataByDateRange();
+      const filteredDates = filteredData.map(row => row['日期']);
+      
+      // 更新趋势图
+      if (trendChart) {
+        trendChart.data.labels = filteredDates;
+        applyTrendFilter(filteredData);
+        trendChart.update();
+      }
+      
+      // 更新分布图（使用最新数据）
+      if (distributionChart && filteredData.length > 0) {
+        const lastRow = filteredData[filteredData.length - 1];
+        
+        distributionChart.data.datasets[0].data = assetNames.map(asset => lastRow[asset]);
+        distributionChart.update();
+      }
+
+      renderCategoryDistributionChart();
+      renderCategoryTrendChart();
+      renderDomesticOverseasTrendChart();
+      renderMonthlyIncreaseTrendChart();
+      renderCategoryContributionChart30Days();
+      renderAssetCategorySankey();
+      
+      // 更新收益率图表
+      updateReturnRateChart();
+
+      // 更新资产详情表格
+      renderAssetTable();
+    }
+    
+    // 更新收益率图表
+    function updateReturnRateChart() {
+      const period = document.getElementById('returnRatePeriod').value;
+      let dataForPeriod = [...currentData];
+      
+      if (period !== 'all') {
+        // 计算起始日期
+        const anchorDate = getDataAnchorDate();
+        const startDate = new Date(anchorDate);
+        startDate.setDate(anchorDate.getDate() - parseInt(period, 10));
+        
+        // 筛选出日期大于等于起始日期的数据
+        dataForPeriod = currentData.filter(row => {
+          const rowDate = new Date(row['日期']);
+          return rowDate >= startDate;
+        });
+      }
+      
+      if (dataForPeriod.length < 2) return;
+      
+      // 计算该时间段内的收益率
+      const firstRow = dataForPeriod[0];
+      const lastRow = dataForPeriod[dataForPeriod.length - 1];
+      const periodReturnRates = {};
+      
+      for (const key in firstRow) {
+        if (key !== '日期') {
+          const startValue = firstRow[key];
+          const endValue = lastRow[key];
+          // 处理除数为0的情况
+          periodReturnRates[key] = startValue === 0 ? 
+            (endValue > 0 ? '100.00' : '0.00') : 
+            ((endValue - startValue) / startValue * 100).toFixed(2);
+        }
+      }
+      
+      // 按收益率排序
+      const sortedByReturn = [...assetNames].sort((a, b) => periodReturnRates[b] - periodReturnRates[a]).slice(0, 5);
+      
+      // 更新图表
+      if (returnRateChart) {
+        returnRateChart.data.labels = sortedByReturn;
+        returnRateChart.data.datasets[0].data = sortedByReturn.map(asset => periodReturnRates[asset]);
+        returnRateChart.data.datasets[0].backgroundColor = sortedByReturn.map(asset => {
+          const rate = parseFloat(periodReturnRates[asset]);
+          return rate >= 0 ? 'rgba(0, 180, 42, 0.7)' : 'rgba(245, 63, 63, 0.7)';
+        });
+        returnRateChart.data.datasets[0].borderColor = sortedByReturn.map(asset => {
+          const rate = parseFloat(periodReturnRates[asset]);
+          return rate >= 0 ? 'rgba(0, 180, 42, 1)' : 'rgba(245, 63, 63, 1)';
+        });
+        
+        returnRateChart.update();
+      } else {
+        renderReturnRateChart();
+      }
+    }
+    
+    // 渲染趋势图
+    function renderTrendChart() {
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      const filteredData = getFilteredDataByDateRange();
+      const filteredDates = filteredData.map(row => row['日期']);
+      
+      // 生成随机颜色
+      const colors = getRandomColors(assetNames.length);
+      const borderColors = colors.map(color => color.replace('0.8', '1'));
+      
+      // 如果图表已存在，销毁它
+      if (trendChart) {
+        trendChart.destroy();
+      }
+      
+      const trendChartData = {
+        labels: filteredDates,
+        datasets: [
+          {
+            label: '全部资产',
+            assetKey: 'total',
+            data: filteredData.map(row => assetNames.reduce((sum, asset) => sum + row[asset], 0)),
+            borderColor: '#165DFF',
+            backgroundColor: 'transparent',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: false,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#165DFF'
+          },
+          ...assetNames.map((asset, index) => ({
+            label: asset,
+            assetKey: asset,
+            data: filteredData.map(row => row[asset]),
+            borderColor: borderColors[index],
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: false,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: borderColors[index]
+          }))
+        ]
+      };
+      
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: trendChartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 10,
+                usePointStyle: true,
+                pointStyle: 'circle',
+                font: {
+                  size: 11
+                }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1D2129',
+              bodyColor: '#4E5969',
+              borderColor: '#E5E6EB',
+              borderWidth: 1,
+              padding: 10,
+              boxPadding: 5,
+              usePointStyle: true,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ¥${context.raw.toLocaleString()}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                maxRotation: 0,
+                font: {
+                  size: 10
+                }
+              }
+            },
+            y: {
+              beginAtZero: false,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return '¥' + value.toLocaleString();
+                },
+                font: {
+                  size: 10
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+
+      applyTrendFilter(filteredData);
+      trendChart.update();
+    }
+
+    function applyTrendFilter(filteredData) {
+      trendChart.data.datasets.forEach(dataset => {
+        if (dataset.assetKey === 'total') {
+          dataset.data = filteredData.map(row => assetNames.reduce((sum, asset) => sum + row[asset], 0));
+          dataset.hidden = activeTrendFilter !== 'total';
+          return;
+        }
+
+        dataset.data = filteredData.map(row => row[dataset.assetKey]);
+        if (activeTrendFilter === 'all') {
+          dataset.hidden = false;
+        } else if (activeTrendFilter === 'total') {
+          dataset.hidden = true;
+        } else {
+          dataset.hidden = dataset.assetKey !== activeTrendFilter;
+        }
+      });
+    }
+    
+    // 悬浮窗相关元素
+    const distributionDetailModal = document.getElementById('distributionDetailModal');
+    const distributionDetailBtn = document.getElementById('distributionDetailBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const categoryDistributionDetailModal = document.getElementById('categoryDistributionDetailModal');
+    const categoryDistributionDetailBtn = document.getElementById('categoryDistributionDetailBtn');
+    const closeCategoryModalBtn = document.getElementById('closeCategoryModalBtn');
+    let detailDistributionChart = null;
+
+    // 打开悬浮窗
+    distributionDetailBtn.addEventListener('click', function() {
+      distributionDetailModal.classList.remove('hidden');
+      renderDetailDistributionChart();
+      renderAssetDistributionDetails();
+    });
+
+    // 关闭悬浮窗
+    closeModalBtn.addEventListener('click', function() {
+      distributionDetailModal.classList.add('hidden');
+      if (detailDistributionChart) {
+        detailDistributionChart.destroy();
+        detailDistributionChart = null;
+      }
+    });
+
+    // 点击背景关闭悬浮窗
+    distributionDetailModal.addEventListener('click', function(e) {
+      if (e.target === distributionDetailModal) {
+        distributionDetailModal.classList.add('hidden');
+        if (detailDistributionChart) {
+          detailDistributionChart.destroy();
+          detailDistributionChart = null;
+        }
+      }
+    });
+
+    // 打开分类悬浮窗
+    categoryDistributionDetailBtn.addEventListener('click', function() {
+      categoryDistributionDetailModal.classList.remove('hidden');
+      renderCategoryDetailDistributionChart();
+      renderCategoryDistributionDetails();
+    });
+
+    // 关闭分类悬浮窗
+    closeCategoryModalBtn.addEventListener('click', function() {
+      categoryDistributionDetailModal.classList.add('hidden');
+      if (categoryDetailDistributionChart) {
+        categoryDetailDistributionChart.destroy();
+        categoryDetailDistributionChart = null;
+      }
+    });
+
+    // 点击背景关闭分类悬浮窗
+    categoryDistributionDetailModal.addEventListener('click', function(e) {
+      if (e.target === categoryDistributionDetailModal) {
+        categoryDistributionDetailModal.classList.add('hidden');
+        if (categoryDetailDistributionChart) {
+          categoryDetailDistributionChart.destroy();
+          categoryDetailDistributionChart = null;
+        }
+      }
+    });
+
+    // 渲染详情悬浮窗中的资产占比分布图
+    function renderDetailDistributionChart() {
+      const ctx = document.getElementById('detailDistributionChart').getContext('2d');
+      const filteredData = getFilteredDataByDateRange();
+      const lastRow = filteredData[filteredData.length - 1];
+      
+      // 生成随机颜色
+      const colors = getRandomColors(assetNames.length);
+      
+      // 如果图表已存在，销毁它
+      if (detailDistributionChart) {
+        detailDistributionChart.destroy();
+      }
+      
+      const distributionData = {
+        labels: assetNames,
+        datasets: [{
+          data: assetNames.map(asset => lastRow[asset]),
+          backgroundColor: colors,
+          borderColor: '#ffffff',
+          borderWidth: 2,
+          hoverOffset: 10
+        }]
+      };
+      
+      detailDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: distributionData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                padding: 15,
+                font: {
+                  size: 12
+                }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1D2129',
+              bodyColor: '#4E5969',
+              borderColor: '#E5E6EB',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: function(context) {
+                  const value = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ¥${value.toLocaleString()} (${percentage}%)`;
+                }
+              }
+            }
+          },
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+
+    // 渲染资产占比详细数据
+    function renderAssetDistributionDetails() {
+      const container = document.getElementById('assetDistributionDetails');
+      const filteredData = getFilteredDataByDateRange();
+      const lastRow = filteredData[filteredData.length - 1];
+      
+      // 计算总资产值
+      const totalValue = assetNames.reduce((sum, asset) => sum + lastRow[asset], 0);
+      
+      // 创建资产占比数组并排序
+      const assetDistribution = assetNames.map(asset => ({
+        name: asset,
+        value: lastRow[asset],
+        percentage: (lastRow[asset] / totalValue) * 100
+      })).sort((a, b) => b.percentage - a.percentage);
+      
+      // 生成随机颜色
+      const colors = getRandomColors(assetNames.length);
+      
+      // 渲染详情列表
+      container.innerHTML = assetDistribution.map((item, index) => `
+        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-light-1 transition-colors">
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full mr-2" style="background-color: ${colors[index]}"></div>
+            <span class="font-medium">${item.name}</span>
+          </div>
+          <div class="text-right">
+            <div class="font-medium">¥${item.value.toLocaleString()}</div>
+            <div class="text-sm text-dark-2">${item.percentage.toFixed(1)}%</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCategoryDetailDistributionChart() {
+      const canvas = document.getElementById('categoryDetailDistributionChart');
+      if (!canvas) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0) return;
+
+      const lastRow = filteredData[filteredData.length - 1];
+      const snapshot = buildCategorySnapshot(lastRow);
+      const labels = Object.keys(snapshot);
+      const values = labels.map(label => snapshot[label]);
+      const colors = getRandomColors(labels.length);
+
+      if (categoryDetailDistributionChart) {
+        categoryDetailDistributionChart.destroy();
+      }
+
+      categoryDetailDistributionChart = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                padding: 15,
+                font: { size: 12 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? ((context.raw / total) * 100).toFixed(1) : '0.0';
+                  return `${context.label}: ¥${context.raw.toLocaleString()} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderCategoryDistributionDetails() {
+      const container = document.getElementById('categoryDistributionDetails');
+      if (!container) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const lastRow = filteredData[filteredData.length - 1];
+      const snapshot = buildCategorySnapshot(lastRow);
+      const totalValue = Object.values(snapshot).reduce((sum, value) => sum + value, 0);
+      const categories = Object.keys(snapshot);
+      const colors = getRandomColors(categories.length);
+
+      const detailRows = categories.map(category => ({
+        category,
+        value: snapshot[category],
+        percentage: totalValue > 0 ? (snapshot[category] / totalValue) * 100 : 0
+      })).sort((a, b) => b.percentage - a.percentage);
+
+      container.innerHTML = detailRows.map((item, index) => `
+        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-light-1 transition-colors">
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full mr-2" style="background-color: ${colors[index]}"></div>
+            <span class="font-medium">${item.category}</span>
+          </div>
+          <div class="text-right">
+            <div class="font-medium">¥${item.value.toLocaleString()}</div>
+            <div class="text-sm text-dark-2">${item.percentage.toFixed(1)}%</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 渲染资产占比分布图
+    function renderDistributionChart() {
+      const ctx = document.getElementById('distributionChart').getContext('2d');
+      const filteredData = getFilteredDataByDateRange();
+      const lastRow = filteredData[filteredData.length - 1];
+      
+      // 生成随机颜色
+      const colors = getRandomColors(assetNames.length);
+      
+      // 如果图表已存在，销毁它
+      if (distributionChart) {
+        distributionChart.destroy();
+      }
+      
+      const distributionData = {
+        labels: assetNames,
+        datasets: [{
+          data: assetNames.map(asset => lastRow[asset]),
+          backgroundColor: colors,
+          borderColor: '#ffffff',
+          borderWidth: 2,
+          hoverOffset: 10
+        }]
+      };
+      
+      distributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: distributionData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 10,
+                padding: 15,
+                font: {
+                  size: 11
+                }
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1D2129',
+              bodyColor: '#4E5969',
+              borderColor: '#E5E6EB',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: function(context) {
+                  const value = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ¥${value.toLocaleString()} (${percentage}%)`;
+                }
+              }
+            }
+          },
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+
+    function normalizeAssetName(assetName) {
+      return String(assetName || '')
+        .replace(/^\uFEFF/, '')
+        .replace(/[\u200B-\u200D\u2060]/g, '')
+        .trim();
+    }
+
+    function buildNormalizedCategoryMap(mapping) {
+      const normalized = {};
+      Object.keys(mapping || {}).forEach(key => {
+        normalized[normalizeAssetName(key)] = mapping[key];
+      });
+      return normalized;
+    }
+
+    function getCategoryByAsset(assetName) {
+      return assetCategoryMap[normalizeAssetName(assetName)] || '其他';
+    }
+
+    function getDomesticOverseasByAsset(assetName) {
+      return domesticOverseasMap[normalizeAssetName(assetName)] || '国内资产';
+    }
+
+    function buildCategorySnapshot(dataRow) {
+      const snapshot = {};
+      assetNames.forEach(asset => {
+        const category = getCategoryByAsset(asset);
+        snapshot[category] = (snapshot[category] || 0) + (dataRow[asset] || 0);
+      });
+      return snapshot;
+    }
+
+    function buildDomesticOverseasSnapshot(dataRow) {
+      const snapshot = {
+        '国内资产': 0,
+        '海外资产': 0
+      };
+      assetNames.forEach(asset => {
+        const type = getDomesticOverseasByAsset(asset);
+        snapshot[type] = (snapshot[type] || 0) + (dataRow[asset] || 0);
+      });
+      return snapshot;
+    }
+
+    function updateCategoryMappingHint() {
+      const hintEl = document.getElementById('categoryMappingHint');
+      if (!hintEl) return;
+
+      const uncategorizedAssets = assetNames.filter(asset => !assetCategoryMap[normalizeAssetName(asset)]);
+      if (uncategorizedAssets.length === 0) {
+        hintEl.textContent = '分类映射完整：当前资产均已匹配配置。';
+        return;
+      }
+
+      hintEl.textContent = `以下资产未在分类配置中，已归为“其他”：${uncategorizedAssets.join('、')}`;
+    }
+
+    function getDataForRecentDays(days) {
+      if (currentData.length === 0) return [];
+
+      const latestDate = new Date(currentData[currentData.length - 1]['日期']);
+      const startDate = new Date(latestDate);
+      startDate.setDate(startDate.getDate() - days);
+
+      const rowsInRange = currentData.filter(row => new Date(row['日期']) >= startDate);
+      if (rowsInRange.length === 0) return [];
+
+      const baselineCandidates = currentData.filter(row => new Date(row['日期']) < startDate);
+      if (baselineCandidates.length > 0) {
+        return [baselineCandidates[baselineCandidates.length - 1], ...rowsInRange];
+      }
+
+      return rowsInRange;
+    }
+
+    function getCategoryContributionData(days = 30) {
+      const periodData = getDataForRecentDays(days);
+      if (periodData.length < 2) {
+        return { netIncrease: 0, contributions: [] };
+      }
+
+      const startRow = periodData[0];
+      const endRow = periodData[periodData.length - 1];
+      const startSnapshot = buildCategorySnapshot(startRow);
+      const endSnapshot = buildCategorySnapshot(endRow);
+      const categories = Array.from(new Set([...Object.keys(startSnapshot), ...Object.keys(endSnapshot)]));
+
+      const contributions = categories.map(category => {
+        const startValue = startSnapshot[category] || 0;
+        const endValue = endSnapshot[category] || 0;
+        return {
+          category,
+          value: endValue - startValue
+        };
+      });
+
+      const netIncrease = contributions.reduce((sum, item) => sum + item.value, 0);
+      return { netIncrease, contributions };
+    }
+
+    function renderCategoryDistributionChart() {
+      const canvas = document.getElementById('categoryDistributionChart');
+      if (!canvas) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0) {
+        if (categoryDistributionChart) {
+          categoryDistributionChart.destroy();
+          categoryDistributionChart = null;
+        }
+        return;
+      }
+
+      const lastRow = filteredData[filteredData.length - 1];
+      const snapshot = buildCategorySnapshot(lastRow);
+      const labels = Object.keys(snapshot);
+      const values = labels.map(label => snapshot[label]);
+      const colors = getRandomColors(labels.length);
+
+      if (categoryDistributionChart) {
+        categoryDistributionChart.destroy();
+      }
+
+      categoryDistributionChart = new Chart(canvas.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 10,
+                padding: 12,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? ((context.raw / total) * 100).toFixed(1) : '0.0';
+                  return `${context.label}: ¥${context.raw.toLocaleString()} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderCategoryTrendChart() {
+      const canvas = document.getElementById('categoryTrendChart');
+      if (!canvas) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0) {
+        if (categoryTrendChart) {
+          categoryTrendChart.destroy();
+          categoryTrendChart = null;
+        }
+        const hintEl = document.getElementById('categoryMappingHint');
+        if (hintEl) hintEl.textContent = '';
+        return;
+      }
+
+      const categorySet = new Set(assetNames.map(asset => getCategoryByAsset(asset)));
+      const categories = Array.from(categorySet);
+      const colors = getRandomColors(categories.length).map(color => color.replace('0.8', '1'));
+
+      if (categoryTrendChart) {
+        categoryTrendChart.destroy();
+      }
+
+      categoryTrendChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: filteredData.map(row => row['日期']),
+          datasets: categories.map((category, index) => ({
+            label: category,
+            data: filteredData.map(row => {
+              let total = 0;
+              assetNames.forEach(asset => {
+                if (getCategoryByAsset(asset) === category) {
+                  total += row[asset] || 0;
+                }
+              });
+              return total;
+            }),
+            borderColor: colors[index],
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 4
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 10,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ¥${context.raw.toLocaleString()}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                callback: function(value) {
+                  return `¥${value.toLocaleString()}`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      updateCategoryMappingHint();
+    }
+
+    function renderDomesticOverseasTrendChart() {
+      const canvas = document.getElementById('domesticOverseasTrendChart');
+      if (!canvas) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0) {
+        if (domesticOverseasTrendChart) {
+          domesticOverseasTrendChart.destroy();
+          domesticOverseasTrendChart = null;
+        }
+        return;
+      }
+
+      const labels = filteredData.map(row => row['日期']);
+      const domesticData = filteredData.map(row => {
+        const snapshot = buildDomesticOverseasSnapshot(row);
+        const total = snapshot['国内资产'] + snapshot['海外资产'];
+        return total > 0 ? (snapshot['国内资产'] / total) * 100 : 0;
+      });
+      const overseasData = filteredData.map(row => {
+        const snapshot = buildDomesticOverseasSnapshot(row);
+        const total = snapshot['国内资产'] + snapshot['海外资产'];
+        return total > 0 ? (snapshot['海外资产'] / total) * 100 : 0;
+      });
+
+      if (domesticOverseasTrendChart) {
+        domesticOverseasTrendChart.destroy();
+      }
+
+      domesticOverseasTrendChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '国内资产',
+              data: domesticData,
+              borderColor: '#165DFF',
+              backgroundColor: 'rgba(22, 93, 255, 0.1)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+              pointRadius: 3,
+              pointHoverRadius: 5
+            },
+            {
+              label: '海外资产',
+              data: overseasData,
+              borderColor: '#0FC6C2',
+              backgroundColor: 'rgba(15, 198, 194, 0.1)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true,
+              pointRadius: 3,
+              pointHoverRadius: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 10,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false }
+            },
+            y: {
+              min: 0,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMonthlyIncreaseTrendChart() {
+      const canvas = document.getElementById('monthlyIncreaseTrendChart');
+      if (!canvas) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length < 2) {
+        if (monthlyIncreaseTrendChart) {
+          monthlyIncreaseTrendChart.destroy();
+          monthlyIncreaseTrendChart = null;
+        }
+        return;
+      }
+
+      const labels = [];
+      const increaseData = [];
+
+      for (let i = 1; i < filteredData.length; i++) {
+        const prevRow = filteredData[i - 1];
+        const currRow = filteredData[i];
+        
+        const prevTotal = assetNames.reduce((sum, asset) => sum + (prevRow[asset] || 0), 0);
+        const currTotal = assetNames.reduce((sum, asset) => sum + (currRow[asset] || 0), 0);
+        const increase = currTotal - prevTotal;
+        
+        const prevDate = new Date(prevRow['日期']);
+        const currDate = new Date(currRow['日期']);
+        const daysDiff = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+        const monthsDiff = daysDiff / 30.4375;
+        
+        const monthlyIncrease = monthsDiff > 0 ? increase / monthsDiff : increase;
+        
+        labels.push(currRow['日期']);
+        increaseData.push(monthlyIncrease);
+      }
+
+      if (monthlyIncreaseTrendChart) {
+        monthlyIncreaseTrendChart.destroy();
+      }
+
+      monthlyIncreaseTrendChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '每月资产变化量',
+            data: increaseData,
+            backgroundColor: increaseData.map(value => value >= 0 ? 'rgba(0, 180, 42, 0.7)' : 'rgba(245, 63, 63, 0.7)'),
+            borderColor: increaseData.map(value => value >= 0 ? 'rgba(0, 180, 42, 1)' : 'rgba(245, 63, 63, 1)'),
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 10,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.raw;
+                  const idx = context.dataIndex;
+                  const filteredData = getFilteredDataByDateRange();
+                  const prevRow = filteredData[idx];
+                  const currRow = filteredData[idx + 1];
+                  const prevTotal = assetNames.reduce((sum, asset) => sum + (prevRow[asset] || 0), 0);
+                  const currTotal = assetNames.reduce((sum, asset) => sum + (currRow[asset] || 0), 0);
+                  const totalChange = currTotal - prevTotal;
+                  const days = Math.round((new Date(currRow['日期']) - new Date(prevRow['日期'])) / (1000 * 60 * 60 * 24));
+                  return [
+                    `期间变化: ${totalChange >= 0 ? '+' : ''}¥${totalChange.toLocaleString()}`,
+                    `天数: ${days}天`,
+                    `月均变化: ${value >= 0 ? '+' : ''}¥${value.toLocaleString()}`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false }
+            },
+            y: {
+              ticks: {
+                callback: function(value) {
+                  return `¥${value.toLocaleString()}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderCategoryContributionChart30Days() {
+      const canvas = document.getElementById('categoryContributionChart');
+      const badgeEl = document.getElementById('netIncrease30dBadge');
+      const emptyEl = document.getElementById('categoryContributionEmpty');
+      if (!canvas || !badgeEl || !emptyEl) return;
+
+      const { netIncrease, contributions } = getCategoryContributionData(30);
+      const sorted = [...contributions]
+        .filter(item => Math.abs(item.value) > 0.0001)
+        .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+      badgeEl.className = `text-xs px-2 py-1 rounded-full ${netIncrease >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`;
+      badgeEl.textContent = `${netIncrease >= 0 ? '+' : '-'}¥${Math.abs(netIncrease).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      if (categoryContributionChart) {
+        categoryContributionChart.destroy();
+        categoryContributionChart = null;
+      }
+
+      if (sorted.length === 0) {
+        canvas.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      canvas.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+
+      categoryContributionChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: sorted.map(item => item.category),
+          datasets: [{
+            label: '近30天贡献金额',
+            data: sorted.map(item => item.value),
+            backgroundColor: sorted.map(item => item.value >= 0 ? 'rgba(0, 180, 42, 0.7)' : 'rgba(245, 63, 63, 0.7)'),
+            borderColor: sorted.map(item => item.value >= 0 ? 'rgba(0, 180, 42, 1)' : 'rgba(245, 63, 63, 1)'),
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.raw;
+                  return `${value >= 0 ? '+' : '-'}¥${Math.abs(value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                callback: function(value) {
+                  return `¥${Number(value).toLocaleString()}`;
+                }
+              }
+            },
+            y: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderAssetCategorySankey() {
+      const container = document.getElementById('assetCategorySankey');
+      if (!container) return;
+
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0 || assetNames.length === 0) {
+        if (assetCategorySankeyChart) {
+          assetCategorySankeyChart.dispose();
+          assetCategorySankeyChart = null;
+        }
+        container.innerHTML = `
+          <div class="flex items-center justify-center h-full text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-2"></i> 暂无数据可绘制桑吉图
+          </div>
+        `;
+        return;
+      }
+
+      if (!window.echarts) {
+        container.innerHTML = `
+          <div class="flex items-center justify-center h-full text-dark-2 text-sm">
+            <i class="fa fa-exclamation-triangle mr-2"></i> ECharts 未加载，无法绘制桑吉图
+          </div>
+        `;
+        return;
+      }
+
+      if (container.querySelector('canvas') === null) {
+        container.innerHTML = '';
+      }
+
+      const latestRow = filteredData[filteredData.length - 1];
+      const sanitizeNodeName = (name) => String(name || '').replace(/[\u200B-\u200D\u2060]/g, '');
+      const rawLinks = assetNames.map(asset => ({
+        asset,
+        category: getCategoryByAsset(asset),
+        value: Number(latestRow[asset] || 0)
+      })).filter(item => item.value > 0);
+
+      const categoryList = Array.from(new Set(rawLinks.map(item => item.category)));
+      const nodes = [
+        ...assetNames.map(asset => ({ name: asset })),
+        ...categoryList.map(category => ({ name: `\u200B${category}` }))
+      ];
+      const links = rawLinks.map(item => ({
+        source: item.asset,
+        target: `\u200B${item.category}`,
+        value: item.value
+      }));
+
+      const isDarkTheme = document.body.classList.contains('theme-dark');
+      const labelColor = isDarkTheme ? '#d1d5db' : '#4E5969';
+
+      if (!assetCategorySankeyChart) {
+        assetCategorySankeyChart = echarts.init(container);
+      }
+
+      assetCategorySankeyChart.setOption({
+        tooltip: {
+          trigger: 'item',
+          formatter: function(params) {
+            if (params.dataType === 'edge') {
+              const sourceName = sanitizeNodeName(params.data.source);
+              const targetName = sanitizeNodeName(params.data.target);
+              return `${sourceName} -> ${targetName}<br/>¥${Number(params.data.value).toLocaleString('zh-CN')}`;
+            }
+            return sanitizeNodeName(params.name);
+          }
+        },
+        series: [{
+          type: 'sankey',
+          left: 12,
+          top: 10,
+          right: 120,
+          bottom: 10,
+          emphasis: { focus: 'adjacency' },
+          draggable: false,
+          data: nodes,
+          links: links,
+          lineStyle: {
+            color: 'source',
+            curveness: 0.5,
+            opacity: 0.35
+          },
+          itemStyle: {
+            borderWidth: 0
+          },
+          label: {
+            position: 'right',
+            distance: 8,
+            color: labelColor,
+            fontSize: 11,
+            overflow: 'break',
+            formatter: function(params) {
+              return sanitizeNodeName(params.name);
+            }
+          }
+        }]
+      });
+    }
+    
+    // 渲染资产收益率排行图
+    function renderReturnRateChart() {
+      const ctx = document.getElementById('returnRateChart').getContext('2d');
+      const period = document.getElementById('returnRatePeriod').value;
+      let dataForPeriod = [...currentData];
+      
+      if (period !== 'all') {
+        // 计算起始日期
+        const anchorDate = getDataAnchorDate();
+        const startDate = new Date(anchorDate);
+        startDate.setDate(anchorDate.getDate() - parseInt(period, 10));
+        
+        // 筛选出日期大于等于起始日期的数据
+        dataForPeriod = currentData.filter(row => {
+          const rowDate = new Date(row['日期']);
+          return rowDate >= startDate;
+        });
+      }
+      
+      if (dataForPeriod.length < 2) return;
+      
+      // 计算该时间段内的收益率
+      const firstRow = dataForPeriod[0];
+      const lastRow = dataForPeriod[dataForPeriod.length - 1];
+      const periodReturnRates = {};
+      
+      for (const key in firstRow) {
+        if (key !== '日期') {
+          const startValue = firstRow[key];
+          const endValue = lastRow[key];
+          // 处理除数为0的情况
+          periodReturnRates[key] = startValue === 0 ? 
+            (endValue > 0 ? '100.00' : '0.00') : 
+            ((endValue - startValue) / startValue * 100).toFixed(2);
+        }
+      }
+      
+      // 按收益率排序
+      const sortedByReturn = [...assetNames].sort((a, b) => periodReturnRates[b] - periodReturnRates[a]).slice(0, 5);
+      
+      // 如果图表已存在，销毁它
+      if (returnRateChart) {
+        returnRateChart.destroy();
+      }
+      
+      const returnRateData = {
+        labels: sortedByReturn,
+        datasets: [{
+          label: '收益率 (%)',
+          data: sortedByReturn.map(asset => periodReturnRates[asset]),
+          backgroundColor: sortedByReturn.map(asset => {
+            const rate = parseFloat(periodReturnRates[asset]);
+            return rate >= 0 ? 'rgba(0, 180, 42, 0.7)' : 'rgba(245, 63, 63, 0.7)';
+          }),
+          borderColor: sortedByReturn.map(asset => {
+            const rate = parseFloat(periodReturnRates[asset]);
+            return rate >= 0 ? 'rgba(0, 180, 42, 1)' : 'rgba(245, 63, 63, 1)';
+          }),
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      };
+      
+      returnRateChart = new Chart(ctx, {
+        type: 'bar',
+        data: returnRateData,
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1D2129',
+              bodyColor: '#4E5969',
+              borderColor: '#E5E6EB',
+              borderWidth: 1,
+              padding: 10,
+              callbacks: {
+                label: function(context) {
+                  return `收益率: ${context.raw}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                },
+                font: {
+                  size: 10
+                }
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  size: 10
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+    
+    // 渲染资产详情（排行榜形式）
+    function renderAssetTable() {
+      const container = document.getElementById('assetTableBody');
+      container.innerHTML = '';
+      
+      if (currentData.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 text-center text-dark-2">
+            <i class="fa fa-info-circle mr-1"></i> 暂无资产数据
+          </div>
+        `;
+        return;
+      }
+      
+      const filteredData = getFilteredDataByDateRange();
+      if (filteredData.length === 0) return;
+      
+      const lastRow = filteredData[filteredData.length - 1];
+      const firstRow = filteredData[0];
+      
+      // 计算该时间段内的收益率
+      const periodReturnRates = {};
+      for (const key in firstRow) {
+        if (key !== '日期') {
+          const startValue = firstRow[key];
+          const endValue = lastRow[key];
+          // 处理除数为0的情况
+          periodReturnRates[key] = startValue === 0 ? 
+            (endValue > 0 ? '100.00' : '0.00') : 
+            ((endValue - startValue) / startValue * 100).toFixed(2);
+        }
+      }
+      
+      // 按当前价值排序
+      const sortedByValue = [...assetNames].sort((a, b) => lastRow[b] - lastRow[a]);
+      
+      sortedByValue.forEach((asset, index) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 border-b border-light-1 hover:bg-light-1/50 transition-colors';
+        
+        const rate = parseFloat(periodReturnRates[asset]);
+        const rateClass = rate >= 0 ? 'text-success' : 'text-danger';
+        const rateIcon = rate >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        // 排名样式
+        let rankClass = '';
+        if (index === 0) rankClass = 'bg-warning text-white';
+        else if (index === 1) rankClass = 'bg-gray-300 text-white';
+        else if (index === 2) rankClass = 'bg-amber-700 text-white';
+        else rankClass = 'bg-light-2 text-dark';
+        
+        item.innerHTML = `
+          <div class="flex items-center">
+            <div class="w-6 h-6 rounded-full ${rankClass} flex items-center justify-center mr-3 text-xs font-bold">
+              ${index + 1}
+            </div>
+            <div>
+              <p class="font-medium text-sm">${asset}</p>
+              <p class="text-dark-2 text-xs">${getDomesticOverseasByAsset(asset)}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="font-medium text-sm">¥${lastRow[asset].toLocaleString()}</p>
+            <p class="text-xs ${rateClass} flex items-center justify-end">
+              <i class="fa ${rateIcon} mr-1"></i>${Math.abs(rate)}%
+            </p>
+          </div>
+        `;
+        
+        container.appendChild(item);
+      });
+    }
+    
+    // 生成最近异动数据
+    function generateRecentChanges() {
+      const container = document.getElementById('recentChanges');
+      container.innerHTML = '';
+      
+      // 至少需要2条数据才能计算变化
+      if (currentData.length < 2) {
+        // 显示无数据提示
+        container.innerHTML = `
+          <div class="p-4 text-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-1"></i> 暂无足够数据显示资产异动
+          </div>
+        `;
+        return;
+      }
+      
+      // 计算最近一次的变化
+      const recentChanges = [];
+      const prevRow = currentData[currentData.length - 2];
+      const lastRow = currentData[currentData.length - 1];
+      const lastDate = new Date(lastRow['日期']);
+      
+      // 格式化日期
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const anchorDate = getDataAnchorDate();
+        const yesterday = new Date(anchorDate);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === anchorDate.toDateString()) {
+          return `今天 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+        } else if (date.toDateString() === yesterday.toDateString()) {
+          return `昨天 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+        } else {
+          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+      };
+      
+      const formattedDate = formatDate(lastRow['日期']);
+      
+      // 计算每个资产的变化
+      assetNames.forEach(asset => {
+        const prevValue = prevRow[asset];
+          const currValue = lastRow[asset];
+          // 处理除数为0的情况
+          const change = prevValue === 0 ? 
+            (currValue > 0 ? '100.00' : '0.00') : 
+            ((currValue - prevValue) / prevValue * 100).toFixed(2);
+        
+        // 只显示有显著变化的资产
+        if (Math.abs(parseFloat(change)) > 0.5) {
+          const amountDelta = currValue - prevValue;
+          recentChanges.push({
+            asset,
+            change: `${parseFloat(change) >= 0 ? '+' : ''}${change}%`,
+            amountText: `${amountDelta >= 0 ? '+' : '-'}¥${Math.abs(amountDelta).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / 当前 ¥${currValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            time: formattedDate,
+            type: parseFloat(change) >= 0 ? 'up' : 'down'
+          });
+        }
+      });
+      
+      // 如果变化太少，补充一些随机变化
+      if (recentChanges.length < 4) {
+        const randomChangesCount = 4 - recentChanges.length;
+        const shuffledAssets = [...assetNames].sort(() => 0.5 - Math.random());
+        
+        for (let i = 0; i < randomChangesCount; i++) {
+          const asset = shuffledAssets[i];
+          const randomChange = (Math.random() * 3 - 1).toFixed(2); // -1% 到 2% 之间的随机变化
+          const baseValue = lastRow[asset] || 0;
+          const amountDelta = baseValue * (parseFloat(randomChange) / 100);
+          
+          recentChanges.push({
+            asset,
+            change: `${parseFloat(randomChange) >= 0 ? '+' : ''}${randomChange}%`,
+            amountText: `${amountDelta >= 0 ? '+' : '-'}¥${Math.abs(amountDelta).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / 当前 ¥${baseValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            time: formattedDate,
+            type: parseFloat(randomChange) >= 0 ? 'up' : 'down'
+          });
+        }
+      }
+      
+      // 排序，变化大的在前
+      recentChanges.sort((a, b) => {
+        const aVal = Math.abs(parseFloat(a.change));
+        const bVal = Math.abs(parseFloat(b.change));
+        return bVal - aVal;
+      });
+      
+      // 最多显示6个
+      recentChanges.slice(0, 6).forEach(change => {
+        const changeEl = document.createElement('div');
+        const colorClass = change.type === 'up' ? 'text-success' : 'text-danger';
+        const iconClass = change.type === 'up' ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        changeEl.className = 'flex justify-between items-center p-3 border border-light-2 rounded-lg hover:border-primary/30 transition-colors';
+        changeEl.innerHTML = `
+          <div class="flex items-center">
+            <div class="w-8 h-8 rounded-full ${change.type === 'up' ? 'bg-success/10' : 'bg-danger/10'} flex items-center justify-center mr-3">
+              <i class="fa ${iconClass} ${colorClass}"></i>
+            </div>
+            <div>
+              <p class="font-medium text-sm">${change.asset}</p>
+              <p class="text-dark-2 text-xs">${change.time}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-medium ${colorClass}">${change.change}</p>
+            <p class="text-xs ${colorClass}">${change.amountText}</p>
+          </div>
+        `;
+        
+        container.appendChild(changeEl);
+      });
+    }
+    
+    // 历史异动悬浮窗相关元素
+    const historyChangesModal = document.getElementById('historyChangesModal');
+    const historyChangesBtn = document.getElementById('historyChangesBtn');
+    const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+    const historyDaysSelect = document.getElementById('historyDays');
+    const historyChangesContainer = document.getElementById('historyChangesContainer');
+
+    // 资产详情悬浮窗相关元素
+    const assetDetailsModal = document.getElementById('assetDetailsModal');
+    const viewAllAssetsBtn = document.getElementById('viewAllAssetsBtn');
+    const closeAssetDetailsModalBtn = document.getElementById('closeAssetDetailsModalBtn');
+    const assetDetailsDaysSelect = document.getElementById('assetDetailsDays');
+    const assetDetailsContainer = document.getElementById('assetDetailsContainer');
+
+    // 打开历史异动悬浮窗
+    historyChangesBtn.addEventListener('click', function() {
+      // 同步顶部导航栏的时间选择器值到历史异动悬浮窗
+      const topDateRange = document.getElementById('dateRange');
+      const historyDays = document.getElementById('historyDays');
+      
+      // 映射顶部时间范围到历史悬浮窗的天数选项
+      const dateRangeMap = {
+        '90': '90',   // 近季度
+        '180': '180', // 近半年
+        '365': '365', // 近一年
+        '730': '730', // 近两年
+        'all': 'all'  // 全部
+      };
+      
+      // 设置默认值
+      const defaultDays = dateRangeMap[topDateRange.value] || '30';
+      historyDays.value = defaultDays;
+      
+      historyChangesModal.classList.remove('hidden');
+      renderHistoryChanges();
+    });
+
+    // 关闭历史异动悬浮窗
+    closeHistoryModalBtn.addEventListener('click', function() {
+      historyChangesModal.classList.add('hidden');
+    });
+
+    // 点击背景关闭历史异动悬浮窗
+    historyChangesModal.addEventListener('click', function(e) {
+      if (e.target === historyChangesModal) {
+        historyChangesModal.classList.add('hidden');
+      }
+    });
+
+    // 监听天数选择变化
+    historyDaysSelect.addEventListener('change', renderHistoryChanges);
+
+    // 渲染历史异动数据
+    function renderHistoryChanges() {
+      historyChangesContainer.innerHTML = '';
+
+      // 至少需要2条数据才能计算变化
+      if (currentData.length < 2) {
+        // 显示无数据提示
+        historyChangesContainer.innerHTML = `
+          <div class="p-4 text-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-1"></i> 暂无足够数据显示资产异动
+          </div>
+        `;
+        return;
+      }
+
+      const days = historyDaysSelect.value;
+      let filteredData = [...currentData];
+
+      // 根据选择的天数筛选数据
+      if (days !== 'all') {
+        const today = new Date(currentData[currentData.length - 1]['日期']);
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - parseInt(days));
+
+        filteredData = currentData.filter(row => {
+          const rowDate = new Date(row['日期']);
+          return rowDate >= startDate;
+        });
+      }
+
+      if (filteredData.length < 2) {
+        historyChangesContainer.innerHTML = `
+          <div class="p-4 text-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-1"></i> 所选时间段内数据不足
+          </div>
+        `;
+        return;
+      }
+
+      // 格式化日期
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+
+      // 计算每一天的变化
+      const allChanges = [];
+
+      for (let i = 1; i < filteredData.length; i++) {
+        const prevRow = filteredData[i - 1];
+        const currRow = filteredData[i];
+        const date = formatDate(currRow['日期']);
+
+        assetNames.forEach(asset => {
+          const prevValue = prevRow[asset];
+          const currValue = currRow[asset];
+          // 处理除数为0的情况
+          const change = prevValue === 0 ? 
+            (currValue > 0 ? '100.00' : '0.00') : 
+            ((currValue - prevValue) / prevValue * 100).toFixed(2);
+
+          // 只记录有显著变化的资产
+          if (Math.abs(parseFloat(change)) > 0.5) {
+            allChanges.push({
+              asset,
+              change: `${parseFloat(change) >= 0 ? '+' : ''}${change}%`,
+              date,
+              type: parseFloat(change) >= 0 ? 'up' : 'down',
+              value: currValue
+            });
+          }
+        });
+      }
+
+      // 按日期降序排序
+      allChanges.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // 分组显示
+      if (allChanges.length === 0) {
+        historyChangesContainer.innerHTML = `
+          <div class="p-4 text-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-1"></i> 所选时间段内无显著资产异动
+          </div>
+        `;
+        return;
+      }
+
+      // 按日期分组
+      const changesByDate = {};
+      allChanges.forEach(change => {
+        if (!changesByDate[change.date]) {
+          changesByDate[change.date] = [];
+        }
+        changesByDate[change.date].push(change);
+      });
+
+      // 渲染分组数据
+      Object.keys(changesByDate).forEach(date => {
+        const dateGroup = document.createElement('div');
+        dateGroup.className = 'mb-4 last:mb-0';
+
+        // 日期标题
+        const dateTitle = document.createElement('h4');
+        dateTitle.className = 'text-sm font-medium text-dark-2 mb-2';
+        dateTitle.textContent = date;
+        dateGroup.appendChild(dateTitle);
+
+        // 当天的变化列表
+        const changesList = document.createElement('div');
+        changesList.className = 'space-y-2';
+
+        // 按变化幅度排序
+        const sortedChanges = [...changesByDate[date]].sort((a, b) => {
+          const aVal = Math.abs(parseFloat(a.change));
+          const bVal = Math.abs(parseFloat(b.change));
+          return bVal - aVal;
+        });
+
+        sortedChanges.forEach(change => {
+          const changeEl = document.createElement('div');
+          const colorClass = change.type === 'up' ? 'text-success' : 'text-danger';
+          const iconClass = change.type === 'up' ? 'fa-arrow-up' : 'fa-arrow-down';
+
+          changeEl.className = 'flex justify-between items-center p-3 border border-light-2 rounded-lg hover:border-primary/30 transition-colors';
+          changeEl.innerHTML = `
+            <div class="flex items-center">
+              <div class="w-8 h-8 rounded-full ${change.type === 'up' ? 'bg-success/10' : 'bg-danger/10'} flex items-center justify-center mr-3">
+                <i class="fa ${iconClass} ${colorClass}"></i>
+              </div>
+              <div>
+                <p class="font-medium text-sm">${change.asset}</p>
+                <p class="text-dark-2 text-xs">¥${change.value.toLocaleString()}</p>
+              </div>
+            </div>
+            <span class="text-sm font-medium ${colorClass}">${change.change}</span>
+          `;
+
+          changesList.appendChild(changeEl);
+        });
+
+        dateGroup.appendChild(changesList);
+        historyChangesContainer.appendChild(dateGroup);
+      });
+    }
+
+    // 打开资产详情悬浮窗
+    viewAllAssetsBtn.addEventListener('click', function() {
+      // 同步顶部导航栏的时间选择器值到资产详情悬浮窗
+      const topDateRange = document.getElementById('dateRange');
+      const assetDetailsDays = document.getElementById('assetDetailsDays');
+      
+      // 映射顶部时间范围到资产详情悬浮窗的天数选项
+      const dateRangeMap = {
+        '90': '90',   // 近季度
+        '180': '180', // 近半年
+        '365': '365', // 近一年
+        '730': '730', // 近两年
+        'all': 'all'  // 全部
+      };
+      
+      // 设置默认值
+      const defaultDays = dateRangeMap[topDateRange.value] || '30';
+      assetDetailsDays.value = defaultDays;
+      
+      assetDetailsModal.classList.remove('hidden');
+      renderAssetDetails();
+    });
+
+    // 关闭资产详情悬浮窗
+    closeAssetDetailsModalBtn.addEventListener('click', function() {
+      assetDetailsModal.classList.add('hidden');
+    });
+
+    // 点击背景关闭资产详情悬浮窗
+    assetDetailsModal.addEventListener('click', function(e) {
+      if (e.target === assetDetailsModal) {
+        assetDetailsModal.classList.add('hidden');
+      }
+    });
+
+    // 监听天数选择变化
+    assetDetailsDaysSelect.addEventListener('change', renderAssetDetails);
+
+    // 渲染资产详情数据
+    function renderAssetDetails() {
+      assetDetailsContainer.innerHTML = '';
+
+      if (currentData.length === 0) {
+        // 显示无数据提示
+        assetDetailsContainer.innerHTML = `
+          <div class="p-4 text-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-1"></i> 暂无资产数据
+          </div>
+        `;
+        return;
+      }
+
+      const days = assetDetailsDaysSelect.value;
+      let filteredData = [...currentData];
+
+      // 根据选择的天数筛选数据
+      if (days !== 'all') {
+        const today = new Date(currentData[currentData.length - 1]['日期']);
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - parseInt(days));
+
+        filteredData = currentData.filter(row => {
+          const rowDate = new Date(row['日期']);
+          return rowDate >= startDate;
+        });
+      }
+
+      if (filteredData.length === 0) {
+        assetDetailsContainer.innerHTML = `
+          <div class="p-4 text-center text-dark-2 text-sm">
+            <i class="fa fa-info-circle mr-1"></i> 所选时间段内数据不足
+          </div>
+        `;
+        return;
+      }
+
+      const lastRow = filteredData[filteredData.length - 1];
+      const firstRow = filteredData[0];
+      
+      // 计算该时间段内的收益率
+      const periodReturnRates = {};
+      for (const key in firstRow) {
+        if (key !== '日期') {
+          const startValue = firstRow[key];
+          const endValue = lastRow[key];
+          // 处理除数为0的情况
+          periodReturnRates[key] = startValue === 0 ? 
+            (endValue > 0 ? '100.00' : '0.00') : 
+            ((endValue - startValue) / startValue * 100).toFixed(2);
+        }
+      }
+      
+      // 按当前价值排序
+      const sortedByValue = [...assetNames].sort((a, b) => lastRow[b] - lastRow[a]);
+      
+      // 渲染资产详情列表
+      sortedByValue.forEach((asset, index) => {
+        const rate = parseFloat(periodReturnRates[asset]);
+        const rateClass = rate >= 0 ? 'text-success' : 'text-danger';
+        const rateIcon = rate >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        // 排名样式
+        let rankClass = '';
+        if (index === 0) rankClass = 'bg-warning text-white';
+        else if (index === 1) rankClass = 'bg-gray-300 text-white';
+        else if (index === 2) rankClass = 'bg-amber-700 text-white';
+        else rankClass = 'bg-light-2 text-dark';
+        
+        const assetEl = document.createElement('div');
+        assetEl.className = 'flex items-center justify-between p-3 border border-light-2 rounded-lg hover:border-primary/30 transition-colors';
+        assetEl.innerHTML = `
+          <div class="flex items-center">
+            <div class="w-6 h-6 rounded-full ${rankClass} flex items-center justify-center mr-3 text-xs font-bold">
+              ${index + 1}
+            </div>
+            <div>
+              <p class="font-medium text-sm">${asset}</p>
+              <p class="text-dark-2 text-xs">${getDomesticOverseasByAsset(asset)}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="font-medium text-sm">¥${lastRow[asset].toLocaleString()}</p>
+            <p class="text-xs ${rateClass} flex items-center justify-end">
+              <i class="fa ${rateIcon} mr-1"></i>${Math.abs(rate)}%
+            </p>
+          </div>
+        `;
+        
+        assetDetailsContainer.appendChild(assetEl);
+      });
+    }
+
+    // 生成随机颜色
+    function getRandomColors(count) {
+      const colors = [];
+      for (let i = 0; i < count; i++) {
+        const hue = (360 / count) * i;
+        colors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+      }
+      return colors;
+    }
+
+    function applyTheme(theme) {
+      const isDark = theme === 'dark';
+      document.body.classList.toggle('theme-dark', isDark);
+
+      const icon = document.getElementById('themeToggleIcon');
+      const text = document.getElementById('themeToggleText');
+      if (icon) {
+        icon.className = `fa ${isDark ? 'fa-sun-o' : 'fa-moon-o'} text-dark-2`;
+      }
+      if (text) {
+        text.textContent = isDark ? '浅色' : '深色';
+      }
+    }
+
+    function initTheme() {
+      const storedTheme = localStorage.getItem('dashboardTheme');
+      if (storedTheme === 'dark' || storedTheme === 'light') {
+        applyTheme(storedTheme);
+        return;
+      }
+
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    function toggleTheme() {
+      const nextTheme = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+      localStorage.setItem('dashboardTheme', nextTheme);
+      applyTheme(nextTheme);
+      syncMainOffset();
+      if (currentData.length > 0) {
+        renderAssetCategorySankey();
+      }
+    }
+
+    function updateFooterYearRange() {
+      const footerText = document.getElementById('footerCopyright');
+      if (!footerText) return;
+
+      const currentYear = new Date().getFullYear();
+      let startYear = currentYear;
+      let endYear = currentYear;
+
+      if (currentData.length > 0) {
+        const years = currentData
+          .map(row => parseInt(String(row['日期']).slice(0, 4), 10))
+          .filter(year => !Number.isNaN(year));
+
+        if (years.length > 0) {
+          startYear = Math.min(...years);
+          endYear = Math.max(...years);
+        }
+      }
+
+      const yearText = startYear === endYear ? `${startYear}` : `${startYear}-${endYear}`;
+      footerText.textContent = `© ${yearText} 资产统计监控系统. 保留所有权利.`;
+    }
+    
+    // 清空所有图表
+    function clearAllCharts() {
+      if (trendChart) {
+        trendChart.destroy();
+        trendChart = null;
+      }
+      if (distributionChart) {
+        distributionChart.destroy();
+        distributionChart = null;
+      }
+      if (returnRateChart) {
+        returnRateChart.destroy();
+        returnRateChart = null;
+      }
+      if (categoryDistributionChart) {
+        categoryDistributionChart.destroy();
+        categoryDistributionChart = null;
+      }
+      if (categoryTrendChart) {
+        categoryTrendChart.destroy();
+        categoryTrendChart = null;
+      }
+      if (domesticOverseasTrendChart) {
+        domesticOverseasTrendChart.destroy();
+        domesticOverseasTrendChart = null;
+      }
+      if (monthlyIncreaseTrendChart) {
+        monthlyIncreaseTrendChart.destroy();
+        monthlyIncreaseTrendChart = null;
+      }
+      if (categoryDetailDistributionChart) {
+        categoryDetailDistributionChart.destroy();
+        categoryDetailDistributionChart = null;
+      }
+      if (categoryContributionChart) {
+        categoryContributionChart.destroy();
+        categoryContributionChart = null;
+      }
+      if (assetCategorySankeyChart) {
+        assetCategorySankeyChart.dispose();
+        assetCategorySankeyChart = null;
+      }
+    }
+    
+  </script>
+</body>
+</html>
