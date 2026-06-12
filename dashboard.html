@@ -195,102 +195,131 @@
   <main id="mainContent" class="container mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
     
     <!-- 概览卡片 -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8" id="overviewCards">
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-6 lg:mb-8" id="overviewCards">
       <!-- 卡片内容由JS动态生成 -->
     </section>
     
     <!-- 主要趋势图 -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow lg:col-span-2">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
-          <h2 class="text-lg font-bold">资产趋势</h2>
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-6 lg:mb-8">
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow lg:col-span-2">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">资产趋势</h2>
           <div class="flex flex-nowrap overflow-x-auto no-scrollbar pb-1 gap-2" id="assetFilters">
             <!-- 筛选按钮由JS动态生成 -->
           </div>
         </div>
-        <div class="h-[260px] sm:h-[320px] lg:h-[350px]">
+        <div class="h-[220px] sm:h-[260px] lg:h-[350px]">
           <canvas id="trendChart"></canvas>
         </div>
       </div>
       
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold">资产占比分布</h2>
-          <button id="distributionDetailBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">资产占比分布</h2>
+          <button id="distributionDetailBtn" class="text-primary text-xs sm:text-sm flex items-center hover:text-primary/80 transition-colors whitespace-nowrap">
             <span>详情</span>
             <i class="fa fa-angle-right ml-1"></i>
           </button>
         </div>
-        <div class="h-[260px] sm:h-[320px] lg:h-[350px] flex items-center justify-center">
+        <div class="h-[220px] sm:h-[260px] lg:h-[350px] flex items-center justify-center">
           <canvas id="distributionChart"></canvas>
         </div>
       </div>
     </section>
 
     <!-- 分类分析 -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold">分类资产占比</h2>
-          <button id="categoryDistributionDetailBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-6 lg:mb-8">
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">分类资产占比</h2>
+          <button id="categoryDistributionDetailBtn" class="text-primary text-xs sm:text-sm flex items-center hover:text-primary/80 transition-colors whitespace-nowrap">
             <span>详情</span>
             <i class="fa fa-angle-right ml-1"></i>
           </button>
         </div>
-        <div class="h-[240px] sm:h-[280px] lg:h-[300px] flex items-center justify-center">
+        <div class="h-[200px] sm:h-[240px] lg:h-[300px] flex items-center justify-center">
           <canvas id="categoryDistributionChart"></canvas>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow lg:col-span-2">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold">分类资产趋势</h2>
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow lg:col-span-2">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+          <h2 class="text-base sm:text-lg font-bold">分类资产趋势</h2>
           <span class="text-xs text-dark-2">按日期范围同步</span>
         </div>
-        <div class="h-[240px] sm:h-[280px] lg:h-[300px]">
+        <div class="h-[200px] sm:h-[240px] lg:h-[300px]">
           <canvas id="categoryTrendChart"></canvas>
         </div>
-        <div id="categoryMappingHint" class="mt-4 text-xs text-dark-2"></div>
+        <div id="categoryMappingHint" class="mt-3 sm:mt-4 text-xs text-dark-2"></div>
       </div>
     </section>
 
     <!-- 国内海外占比趋势 -->
-    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-lg font-bold">国内海外占比趋势</h2>
+    <section class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow mb-5 sm:mb-6 lg:mb-8">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 sm:mb-5 lg:mb-6">
+        <h2 class="text-base sm:text-lg font-bold">国内海外占比趋势</h2>
         <span class="text-xs text-dark-2">按日期范围同步</span>
       </div>
-      <div class="h-[300px] sm:h-[350px]">
+      <div class="h-[240px] sm:h-[280px] lg:h-[350px]">
         <canvas id="domesticOverseasTrendChart"></canvas>
       </div>
     </section>
 
     <!-- 每月资产变化趋势 -->
-    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-lg font-bold">每月资产变化趋势</h2>
+    <section class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow mb-5 sm:mb-6 lg:mb-8">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 sm:mb-5 lg:mb-6">
+        <h2 class="text-base sm:text-lg font-bold">每月资产变化趋势</h2>
         <span class="text-xs text-dark-2">按日期范围同步</span>
       </div>
-      <div class="h-[300px] sm:h-[350px]">
+      <div class="h-[240px] sm:h-[280px] lg:h-[350px]">
         <canvas id="monthlyIncreaseTrendChart"></canvas>
       </div>
     </section>
 
+    <!-- 资产回撤曲线 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-6 lg:mb-8">
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow lg:col-span-2">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">资产回撤曲线</h2>
+          <span class="text-xs text-dark-2">距历史高点的回撤幅度</span>
+        </div>
+        <div class="h-[220px] sm:h-[260px] lg:h-[340px]">
+          <canvas id="drawdownChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+        <div class="flex flex-col gap-3 sm:gap-4 lg:gap-5">
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <h2 class="text-base sm:text-lg font-bold">风险指标</h2>
+              <span class="text-xs text-dark-2">按所选日期范围</span>
+            </div>
+            <p class="text-xs text-dark-2 leading-relaxed">年化波动率反映资产波动幅度，最大回撤衡量历史最大亏损幅度，夏普比率综合衡量每承担一单位风险获得的超额收益。</p>
+          </div>
+
+          <div class="space-y-2 sm:space-y-3" id="riskMetricsPanel">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 资产分类流向 -->
-    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-bold">资产分类流向</h2>
+    <section class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow mb-5 sm:mb-6 lg:mb-8">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+        <h2 class="text-base sm:text-lg font-bold">资产分类流向</h2>
         <span class="text-xs text-dark-2">资产 -> 分类</span>
       </div>
-      <div id="assetCategorySankey" class="h-[280px] sm:h-[320px] lg:h-[360px]"></div>
+      <div id="assetCategorySankey" class="h-[220px] sm:h-[280px] lg:h-[360px]"></div>
     </section>
     
     <!-- 次要图表和表格 -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold">资产收益率排行</h2>
-          <select class="text-sm border-none bg-light-1 rounded px-2 py-1 outline-none" id="returnRatePeriod">
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-6 lg:mb-8">
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">资产收益率排行</h2>
+          <select class="text-xs sm:text-sm border-none bg-light-1 rounded px-2 py-1 outline-none whitespace-nowrap" id="returnRatePeriod">
             <option value="all">全部周期</option>
             <option value="90">近季度</option>
             <option value="180">近半年</option>
@@ -298,48 +327,48 @@
             <option value="730">近两年</option>
           </select>
         </div>
-        <div class="h-[240px] sm:h-[280px] lg:h-[300px]">
+        <div class="h-[200px] sm:h-[240px] lg:h-[300px]">
           <canvas id="returnRateChart"></canvas>
         </div>
       </div>
       
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold">分类贡献度（近30天）</h2>
-          <span id="netIncrease30dBadge" class="text-xs bg-success/10 text-success px-2 py-1 rounded-full">--</span>
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">分类贡献度（近30天）</h2>
+          <span id="netIncrease30dBadge" class="text-xs bg-success/10 text-success px-2 py-1 rounded-full whitespace-nowrap">--</span>
         </div>
-        <div class="h-[240px] sm:h-[280px] lg:h-[300px] relative">
+        <div class="h-[200px] sm:h-[240px] lg:h-[300px] relative">
           <canvas id="categoryContributionChart"></canvas>
-          <div id="categoryContributionEmpty" class="hidden absolute inset-0 flex items-center justify-center text-dark-2 text-sm">
+          <div id="categoryContributionEmpty" class="hidden absolute inset-0 flex items-center justify-center text-dark-2 text-xs sm:text-sm">
             <i class="fa fa-info-circle mr-2"></i> 近30天数据不足，无法计算分类贡献度
           </div>
         </div>
       </div>
       
-      <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-lg font-bold">资产详情</h2>
-          <button id="viewAllAssetsBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+      <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 sm:mb-5 lg:mb-6">
+          <h2 class="text-base sm:text-lg font-bold">资产详情</h2>
+          <button id="viewAllAssetsBtn" class="text-primary text-xs sm:text-sm flex items-center hover:text-primary/80 transition-colors whitespace-nowrap">
             <span>查看全部</span>
             <i class="fa fa-angle-right ml-1"></i>
           </button>
         </div>
-        <div id="assetTableBody" class="max-h-[300px] overflow-y-auto pr-2">
+        <div id="assetTableBody" class="max-h-[260px] sm:max-h-[280px] lg:max-h-[300px] overflow-y-auto pr-2">
           <!-- 排行榜内容由JS动态生成 -->
         </div>
       </div>
     </section>
     
     <!-- 最近异动 -->
-    <section class="bg-white rounded-xl p-4 sm:p-6 card-shadow mb-6 sm:mb-8">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-lg font-bold">资产最近异动</h2>
-        <button id="historyChangesBtn" class="text-primary text-sm flex items-center hover:text-primary/80 transition-colors">
+    <section class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow mb-5 sm:mb-6 lg:mb-8">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-4 sm:mb-5 lg:mb-6">
+        <h2 class="text-base sm:text-lg font-bold">资产最近异动</h2>
+        <button id="historyChangesBtn" class="text-primary text-xs sm:text-sm flex items-center hover:text-primary/80 transition-colors whitespace-nowrap">
           <span>查看历史</span>
           <i class="fa fa-history ml-1"></i>
         </button>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" id="recentChanges">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6" id="recentChanges">
         <!-- 异动内容由JS动态生成 -->
       </div>
     </section>
@@ -498,6 +527,7 @@
     let assetCategorySankeyChart = null;
     let domesticOverseasTrendChart = null;
     let monthlyIncreaseTrendChart = null;
+    let drawdownChart = null;
     let activeTrendFilter = 'total';
     let assetCategoryMap = {};
     let domesticOverseasMap = {};
@@ -686,6 +716,7 @@
         if (categoryContributionChart) categoryContributionChart.resize();
         if (assetCategorySankeyChart) assetCategorySankeyChart.resize();
         if (returnRateChart) returnRateChart.resize();
+        if (drawdownChart) drawdownChart.resize();
       });
       window.addEventListener('load', syncMainOffset);
     });
@@ -846,6 +877,11 @@
       renderCategoryContributionChart30Days();
       renderAssetCategorySankey();
       renderReturnRateChart();
+
+      // 新增：回撤曲线 + 风险指标面板
+      const filteredData = getFilteredDataByDateRange();
+      renderDrawdownChart(filteredData);
+      renderRiskMetricsPanel(filteredData);
       
       // 渲染资产详情表格
       renderAssetTable();
@@ -896,21 +932,139 @@
       
       return returnRates;
     }
-    
+
+    // 计算总资产时间序列
+    function calculateTotalSeries(data) {
+      if (!data || data.length === 0) return [];
+      return data.map(row => {
+        let total = 0;
+        for (const key in row) {
+          if (key !== '日期') total += Number(row[key] || 0);
+        }
+        return { date: row['日期'], total: total };
+      });
+    }
+
+    // 计算年化波动率
+    function calculateVolatility(data) {
+      if (!data || data.length < 2) return { value: 0, series: [] };
+      const series = calculateTotalSeries(data);
+      const returns = [];
+      const drawdownSeries = [];
+      let peak = series[0].total;
+
+      for (let i = 1; i < series.length; i++) {
+        const prev = series[i - 1].total;
+        const curr = series[i].total;
+        if (prev > 0) {
+          returns.push((curr - prev) / prev);
+        }
+        if (curr > peak) peak = curr;
+        drawdownSeries.push(peak > 0 ? ((curr - peak) / peak) * 100 : 0);
+      }
+
+      if (returns.length < 2) return { value: 0, series: drawdownSeries };
+
+      const mean = returns.reduce((s, r) => s + r, 0) / returns.length;
+      const variance = returns.reduce((s, r) => s + Math.pow(r - mean, 2), 0) / (returns.length - 1);
+      const stdDev = Math.sqrt(variance);
+
+      const firstDate = new Date(data[0]['日期']);
+      const lastDate = new Date(data[data.length - 1]['日期']);
+      const daysDiff = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+      const periodsPerYear = daysDiff > 0 ? 365 / daysDiff * (data.length - 1) / data.length : 0;
+      const annualizedVol = stdDev * Math.sqrt(Math.max(periodsPerYear, 12)) * 100;
+
+      return { value: annualizedVol, series: drawdownSeries };
+    }
+
+    // 计算最大回撤
+    function calculateMaxDrawdown(data) {
+      if (!data || data.length < 2) return { value: 0, series: [], peakDate: null, troughDate: null };
+      const series = calculateTotalSeries(data);
+
+      let peak = series[0].total;
+      let peakIdx = 0;
+      let maxDD = 0;
+      let maxDDStart = 0;
+      let maxDDEnd = 0;
+      const drawdownSeries = [];
+
+      for (let i = 0; i < series.length; i++) {
+        const curr = series[i].total;
+        if (curr > peak) {
+          peak = curr;
+          peakIdx = i;
+        }
+        const dd = peak > 0 ? ((curr - peak) / peak) * 100 : 0;
+        drawdownSeries.push(dd);
+        if (dd < maxDD) {
+          maxDD = dd;
+          maxDDStart = peakIdx;
+          maxDDEnd = i;
+        }
+      }
+
+      return {
+        value: maxDD,
+        series: drawdownSeries,
+        peakDate: series[maxDDStart]?.date || null,
+        troughDate: series[maxDDEnd]?.date || null
+      };
+    }
+
+    // 计算 HHI 集中度指数
+    function calculateHHI(row) {
+      const values = assetNames.map(a => Number(row[a] || 0));
+      const total = values.reduce((s, v) => s + v, 0);
+      if (total <= 0) return { value: 0, assessment: '—' };
+      const hhi = values.reduce((s, v) => s + Math.pow(v / total, 2), 0);
+
+      let assessment = '非常分散';
+      if (hhi >= 0.5) assessment = '高度集中';
+      else if (hhi >= 0.3) assessment = '较为集中';
+      else if (hhi >= 0.2) assessment = '中等分散';
+      else if (hhi >= 0.1) assessment = '较为分散';
+
+      return { value: hhi, assessment: assessment };
+    }
+
+    // 计算简化版夏普比率 (无风险利率取 2%)
+    function calculateSharpeRatio(annualReturn, annualVol) {
+      const riskFreeRate = 2;
+      if (annualVol <= 0 || !isFinite(annualVol)) return { value: 0, assessment: '—' };
+      const ratio = (annualReturn - riskFreeRate) / annualVol;
+
+      let assessment = '偏低';
+      if (ratio >= 2) assessment = '优秀';
+      else if (ratio >= 1.5) assessment = '良好';
+      else if (ratio >= 1) assessment = '合格';
+      else if (ratio >= 0.5) assessment = '一般';
+
+      return { value: ratio, assessment: assessment };
+    }
+
     // 渲染概览卡片
     function renderOverviewCards(totalAssetValue, returnRates) {
       const container = document.getElementById('overviewCards');
       container.innerHTML = '';
-      
+      container.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-6 lg:mb-8';
+
+      const moneyFmtOpts = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+      const moneyFmt = function(v) {
+        return Number(v).toLocaleString('zh-CN', moneyFmtOpts);
+      };
+
       // 计算平均收益率
       const returnRateValues = Object.values(returnRates).map(Number);
-      const avgReturnRate = returnRateValues.length > 0 
+      const avgReturnRate = returnRateValues.length > 0
         ? (returnRateValues.reduce((sum, rate) => sum + rate, 0) / returnRateValues.length).toFixed(1)
         : '0.0';
-      
+
       // 计算资产集中度（Top3占比）
       let top3Concentration = 0;
       let domesticAssetRatio = 0;
+      let hhiInfo = { value: 0, assessment: '—' };
       if (currentData.length > 0) {
         const lastRow = currentData[currentData.length - 1];
         const latestValues = assetNames.map(asset => Number(lastRow[asset] || 0));
@@ -918,10 +1072,11 @@
         if (total > 0) {
           const top3Total = [...latestValues].sort((a, b) => b - a).slice(0, 3).reduce((sum, val) => sum + val, 0);
           top3Concentration = (top3Total / total) * 100;
-          
-          // 计算国内资产占比
+
           const domesticOverseasSnapshot = buildDomesticOverseasSnapshot(lastRow);
           domesticAssetRatio = (domesticOverseasSnapshot['国内资产'] / total) * 100;
+
+          hhiInfo = calculateHHI(lastRow);
         }
       }
 
@@ -942,7 +1097,6 @@
           avgMonthlyIncrease = (latestTotal - prevTotal) / latestElapsedMonths;
         }
 
-        // 年化增速仍基于全区间起止数据
         const firstRow = currentData[0];
         const startTotal = assetNames.reduce((sum, asset) => sum + (firstRow[asset] || 0), 0);
         const startDate = new Date(firstRow['日期']);
@@ -951,87 +1105,181 @@
           annualGrowthRate = (Math.pow(latestTotal / startTotal, 12 / fullElapsedMonths) - 1) * 100;
         }
       }
-      
-      // 总资产价值卡片
+
+      // 计算波动率、最大回撤、夏普比率
+      const volResult = calculateVolatility(currentData);
+      const ddResult = calculateMaxDrawdown(currentData);
+      const sharpeResult = calculateSharpeRatio(annualGrowthRate, volResult.value);
+
+      // ========== 卡片 1: 总资产价值 ==========
       container.innerHTML += `
-        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
-          <div class="flex justify-between items-start mb-4">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
             <div>
-              <p class="text-dark-2 text-sm">总资产价值</p>
-              <h3 class="text-xl sm:text-2xl font-bold mt-1 break-all">¥${totalAssetValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+              <p class="text-dark-2 text-xs sm:text-sm">总资产价值</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1 break-all">¥${moneyFmt(totalAssetValue)}</h3>
             </div>
-            <div class="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg gradient-bg flex items-center justify-center shrink-0">
               <i class="fa fa-money text-white"></i>
             </div>
           </div>
-          <div class="flex items-center">
-            <span class="text-success text-sm flex items-center">
+          <div class="flex items-center flex-wrap">
+            <span class="text-success text-xs sm:text-sm flex items-center">
               <i class="fa fa-arrow-up mr-1"></i>${avgReturnRate}%
             </span>
             <span class="text-dark-2 text-xs ml-2">平均收益率</span>
           </div>
         </div>
       `;
-      
-      // 资产数量卡片
+
+      // ========== 卡片 2: 资产数量 + Top3集中度 ==========
       container.innerHTML += `
-        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
-          <div class="flex justify-between items-start mb-4">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
             <div>
-              <p class="text-dark-2 text-sm">资产数量</p>
-              <h3 class="text-xl sm:text-2xl font-bold mt-1">${assetNames.length}</h3>
+              <p class="text-dark-2 text-xs sm:text-sm">资产数量</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1">${assetNames.length}</h3>
             </div>
-            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <i class="fa fa-pie-chart text-primary"></i>
             </div>
           </div>
-          <div class="flex items-center">
-            <span class="text-primary text-sm flex items-center">
+          <div class="flex items-center flex-wrap">
+            <span class="text-primary text-xs sm:text-sm flex items-center">
               <i class="fa fa-percent mr-1"></i>${top3Concentration.toFixed(1)}%
             </span>
             <span class="text-dark-2 text-xs ml-2">资产集中度 (Top3 占比)</span>
           </div>
         </div>
       `;
-      
-      // 平均每月资产增加数额卡片（包含年化资产增速）
+
+      // ========== 卡片 3: 平均每月资产增加数额 ==========
       container.innerHTML += `
-        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
-          <div class="flex justify-between items-start mb-4">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
             <div>
-              <p class="text-dark-2 text-sm">平均每月资产增加数额</p>
-              <h3 class="text-xl sm:text-2xl font-bold mt-1 break-all">¥${avgMonthlyIncrease.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+              <p class="text-dark-2 text-xs sm:text-sm">平均每月资产增加数额</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1 break-all">¥${moneyFmt(avgMonthlyIncrease)}</h3>
             </div>
-            <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
               <i class="fa fa-calendar-plus-o text-success"></i>
             </div>
           </div>
-          <div class="flex items-center">
-            <span class="text-dark-2 text-sm">年化资产增速：</span>
-            <span class="${annualGrowthRate >= 0 ? 'text-success' : 'text-danger'} text-sm font-medium ml-2 flex items-center">
+          <div class="flex items-center flex-wrap">
+            <span class="text-dark-2 text-xs sm:text-sm">年化资产增速：</span>
+            <span class="${annualGrowthRate >= 0 ? 'text-success' : 'text-danger'} text-xs sm:text-sm font-medium ml-2 flex items-center">
               <i class="fa ${annualGrowthRate >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} mr-1"></i>${annualGrowthRate.toFixed(2)}%
             </span>
           </div>
         </div>
       `;
-      
-      // 国内资产占比卡片
+
+      // ========== 卡片 4: 国内资产占比 ==========
       container.innerHTML += `
-        <div class="bg-white rounded-xl p-4 sm:p-6 card-shadow hover-lift">
-          <div class="flex justify-between items-start mb-4">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
             <div>
-              <p class="text-dark-2 text-sm">国内资产占比</p>
-              <h3 class="text-xl sm:text-2xl font-bold mt-1">${domesticAssetRatio.toFixed(2)}%</h3>
+              <p class="text-dark-2 text-xs sm:text-sm">国内资产占比</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1">${domesticAssetRatio.toFixed(2)}%</h3>
             </div>
-            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <i class="fa fa-pie-chart text-primary"></i>
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <i class="fa fa-flag text-primary"></i>
             </div>
           </div>
-          <div class="flex items-center">
-            <span class="text-primary text-sm flex items-center">
+          <div class="flex items-center flex-wrap">
+            <span class="text-primary text-xs sm:text-sm flex items-center">
               <i class="fa fa-percent mr-1"></i>${domesticAssetRatio.toFixed(2)}%
             </span>
             <span class="text-dark-2 text-xs ml-2">最新记录国内资产占比</span>
+          </div>
+        </div>
+      `;
+
+      // ========== 卡片 5: 年化波动率 ==========
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
+            <div>
+              <p class="text-dark-2 text-xs sm:text-sm">年化波动率</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1">${volResult.value.toFixed(2)}%</h3>
+            </div>
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-warning/15 flex items-center justify-center shrink-0">
+              <i class="fa fa-bar-chart text-warning"></i>
+            </div>
+          </div>
+          <div class="flex items-center flex-wrap">
+            <span class="text-warning text-xs sm:text-sm flex items-center">
+              <i class="fa fa-line-chart mr-1"></i>波动风险
+            </span>
+            <span class="text-dark-2 text-xs ml-2">数值越小越稳定</span>
+          </div>
+        </div>
+      `;
+
+      // ========== 卡片 6: 最大回撤 ==========
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
+            <div>
+              <p class="text-dark-2 text-xs sm:text-sm">最大回撤</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1">${ddResult.value.toFixed(2)}%</h3>
+            </div>
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-danger/15 flex items-center justify-center shrink-0">
+              <i class="fa fa-arrow-down text-danger"></i>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <span class="text-dark-2 text-xs break-all">
+              ${ddResult.peakDate && ddResult.troughDate ? '历史最大跌幅 ' + ddResult.peakDate + ' → ' + ddResult.troughDate : '数据不足'}
+            </span>
+          </div>
+        </div>
+      `;
+
+      // ========== 卡片 7: HHI 集中度指数 ==========
+      const hhiColor = hhiInfo.value >= 0.3 ? 'text-danger' : hhiInfo.value >= 0.2 ? 'text-warning' : 'text-success';
+      const hhiIconBg = hhiInfo.value >= 0.3 ? 'bg-danger/15' : hhiInfo.value >= 0.2 ? 'bg-warning/15' : 'bg-success/15';
+      const hhiIconColor = hhiInfo.value >= 0.3 ? 'text-danger' : hhiInfo.value >= 0.2 ? 'text-warning' : 'text-success';
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
+            <div>
+              <p class="text-dark-2 text-xs sm:text-sm">HHI 集中度指数</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1">${hhiInfo.value.toFixed(3)}</h3>
+            </div>
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg ${hhiIconBg} flex items-center justify-center shrink-0">
+              <i class="fa fa-balance-scale ${hhiIconColor}"></i>
+            </div>
+          </div>
+          <div class="flex items-center flex-wrap">
+            <span class="${hhiColor} text-xs sm:text-sm flex items-center">
+              <i class="fa fa-circle mr-1" style="font-size: 8px;"></i>${hhiInfo.assessment}
+            </span>
+            <span class="text-dark-2 text-xs ml-2">越接近 0 越分散</span>
+          </div>
+        </div>
+      `;
+
+      // ========== 卡片 8: 夏普比率 ==========
+      const sharpeColor = sharpeResult.value >= 1.5 ? 'text-success' : sharpeResult.value >= 1 ? 'text-primary' : sharpeResult.value >= 0.5 ? 'text-warning' : 'text-danger';
+      const sharpeIconBg = sharpeResult.value >= 1.5 ? 'bg-success/15' : sharpeResult.value >= 1 ? 'bg-primary/10' : sharpeResult.value >= 0.5 ? 'bg-warning/15' : 'bg-danger/15';
+      const sharpeIconColor = sharpeResult.value >= 1.5 ? 'text-success' : sharpeResult.value >= 1 ? 'text-primary' : sharpeResult.value >= 0.5 ? 'text-warning' : 'text-danger';
+      container.innerHTML += `
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow hover-lift">
+          <div class="flex justify-between items-start mb-3 sm:mb-4">
+            <div>
+              <p class="text-dark-2 text-xs sm:text-sm">夏普比率</p>
+              <h3 class="text-lg sm:text-2xl font-bold mt-1">${Math.max(sharpeResult.value, 0).toFixed(2)}</h3>
+            </div>
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg ${sharpeIconBg} flex items-center justify-center shrink-0">
+              <i class="fa fa-trophy ${sharpeIconColor}"></i>
+            </div>
+          </div>
+          <div class="flex items-center flex-wrap">
+            <span class="${sharpeColor} text-xs sm:text-sm flex items-center">
+              <i class="fa fa-circle mr-1" style="font-size: 8px;"></i>${sharpeResult.assessment}
+            </span>
+            <span class="text-dark-2 text-xs ml-2">收益/风险综合评估</span>
           </div>
         </div>
       `;
@@ -1239,6 +1487,10 @@
       renderMonthlyIncreaseTrendChart();
       renderCategoryContributionChart30Days();
       renderAssetCategorySankey();
+
+      // 更新回撤曲线、风险指标面板
+      renderDrawdownChart(filteredData);
+      renderRiskMetricsPanel(filteredData);
       
       // 更新收益率图表
       updateReturnRateChart();
@@ -2517,7 +2769,134 @@
         }
       });
     }
-    
+
+    // 渲染回撤曲线图
+    function renderDrawdownChart(filteredData) {
+      const canvas = document.getElementById('drawdownChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const data = filteredData || currentData;
+
+      if (data.length < 2) return;
+
+      const ddResult = calculateMaxDrawdown(data);
+      const labels = data.map(row => row['日期']);
+      const drawdownData = ddResult.series;
+
+      if (drawdownChart) {
+        drawdownChart.destroy();
+      }
+
+      drawdownChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '回撤 (%)',
+            data: drawdownData,
+            borderColor: 'rgba(245, 63, 63, 1)',
+            backgroundColor: 'rgba(245, 63, 63, 0.15)',
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 2,
+            pointBackgroundColor: 'rgba(245, 63, 63, 1)',
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' 回撤: ' + context.parsed.y.toFixed(2) + '%';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 8,
+                font: { size: 10 }
+              }
+            },
+            y: {
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: {
+                callback: function(value) { return value + '%'; },
+                font: { size: 10 }
+              }
+            }
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          },
+          animation: {
+            duration: 800,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+
+    // 渲染风险指标面板（回撤曲线卡片）
+    function renderRiskMetricsPanel(filteredData) {
+      const panel = document.getElementById('riskMetricsPanel');
+      if (!panel) return;
+      const data = filteredData || currentData;
+      if (data.length < 2) {
+        panel.innerHTML = `<div class="text-dark-2 text-xs text-center py-2">数据不足，无法计算风险指标</div>`;
+        return;
+      }
+
+      const vol = calculateVolatility(data);
+      const dd = calculateMaxDrawdown(data);
+      const annualGrowthRate = (() => {
+        const firstRow = data[0];
+        const lastRow = data[data.length - 1];
+        const startTotal = assetNames.reduce((s, a) => s + (firstRow[a] || 0), 0);
+        const endTotal = assetNames.reduce((s, a) => s + (lastRow[a] || 0), 0);
+        const days = (new Date(lastRow['日期']) - new Date(firstRow['日期']));
+        const months = days / (1000 * 60 * 60 * 24 * 30.4375);
+        return months > 0 && startTotal > 0 ? (Math.pow(endTotal / startTotal, 12 / months) - 1) * 100 : 0;
+      })();
+      const sharpe = calculateSharpeRatio(annualGrowthRate, vol.value);
+
+      const volColor = vol.value > 20 ? 'text-danger' : vol.value > 10 ? 'text-warning' : 'text-success';
+      const ddColor = dd.value < -20 ? 'text-danger' : dd.value < -10 ? 'text-warning' : 'text-success';
+      const sharpeColor = sharpe.value >= 1.5 ? 'text-success' : sharpe.value >= 1 ? 'text-primary' : sharpe.value >= 0.5 ? 'text-warning' : 'text-danger';
+
+      panel.innerHTML = `
+        <div class="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+          <div class="flex justify-between items-center pb-2 border-b border-light-2">
+            <span class="text-dark-2">年化波动率</span>
+            <span class="${volColor} font-semibold">${vol.value.toFixed(2)}%</span>
+          </div>
+          <div class="flex justify-between items-center pb-2 border-b border-light-2">
+            <span class="text-dark-2">最大回撤</span>
+            <span class="${ddColor} font-semibold">${dd.value.toFixed(2)}%</span>
+          </div>
+          <div class="flex justify-between items-center pb-2 border-b border-light-2">
+            <span class="text-dark-2">夏普比率</span>
+            <span class="${sharpeColor} font-semibold">${Math.max(sharpe.value, 0).toFixed(2)}</span>
+          </div>
+          <div class="flex justify-between items-center pb-2">
+            <span class="text-dark-2">年化增速</span>
+            <span class="${annualGrowthRate >= 0 ? 'text-success' : 'text-danger'} font-semibold">${annualGrowthRate.toFixed(2)}%</span>
+          </div>
+        </div>
+      `;
+    }
+
     // 渲染资产详情（排行榜形式）
     function renderAssetTable() {
       const container = document.getElementById('assetTableBody');
@@ -2525,7 +2904,7 @@
       
       if (currentData.length === 0) {
         container.innerHTML = `
-          <div class="py-8 text-center text-dark-2">
+          <div class="py-6 sm:py-8 text-center text-dark-2 text-xs sm:text-sm">
             <i class="fa fa-info-circle mr-1"></i> 暂无资产数据
           </div>
         `;
@@ -2556,7 +2935,7 @@
       
       sortedByValue.forEach((asset, index) => {
         const item = document.createElement('div');
-        item.className = 'flex items-center justify-between p-3 border-b border-light-1 hover:bg-light-1/50 transition-colors';
+        item.className = 'flex items-center justify-between p-2.5 sm:p-3 border-b border-light-1 hover:bg-light-1/50 transition-colors';
         
         const rate = parseFloat(periodReturnRates[asset]);
         const rateClass = rate >= 0 ? 'text-success' : 'text-danger';
@@ -2571,16 +2950,16 @@
         
         item.innerHTML = `
           <div class="flex items-center">
-            <div class="w-6 h-6 rounded-full ${rankClass} flex items-center justify-center mr-3 text-xs font-bold">
+            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full ${rankClass} flex items-center justify-center mr-2 sm:mr-3 text-xs font-bold shrink-0">
               ${index + 1}
             </div>
-            <div>
-              <p class="font-medium text-sm">${asset}</p>
+            <div class="min-w-0">
+              <p class="font-medium text-xs sm:text-sm truncate">${asset}</p>
               <p class="text-dark-2 text-xs">${getDomesticOverseasByAsset(asset)}</p>
             </div>
           </div>
-          <div class="text-right">
-            <p class="font-medium text-sm">¥${lastRow[asset].toLocaleString()}</p>
+          <div class="text-right ml-2">
+            <p class="font-medium text-xs sm:text-sm">¥${lastRow[asset].toLocaleString()}</p>
             <p class="text-xs ${rateClass} flex items-center justify-end">
               <i class="fa ${rateIcon} mr-1"></i>${Math.abs(rate)}%
             </p>
@@ -2595,12 +2974,13 @@
     function generateRecentChanges() {
       const container = document.getElementById('recentChanges');
       container.innerHTML = '';
+      const moneyFmtOpts = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
       
       // 至少需要2条数据才能计算变化
       if (currentData.length < 2) {
         // 显示无数据提示
         container.innerHTML = `
-          <div class="p-4 text-center text-dark-2 text-sm">
+          <div class="p-3 sm:p-4 text-center text-dark-2 text-xs sm:text-sm">
             <i class="fa fa-info-circle mr-1"></i> 暂无足够数据显示资产异动
           </div>
         `;
@@ -2643,10 +3023,12 @@
         // 只显示有显著变化的资产
         if (Math.abs(parseFloat(change)) > 0.5) {
           const amountDelta = currValue - prevValue;
+          const sign = amountDelta >= 0 ? '+' : '-';
+          const amountStr = sign + '¥' + Math.abs(amountDelta).toLocaleString('zh-CN', moneyFmtOpts) + ' / 当前 ¥' + currValue.toLocaleString('zh-CN', moneyFmtOpts);
           recentChanges.push({
             asset,
-            change: `${parseFloat(change) >= 0 ? '+' : ''}${change}%`,
-            amountText: `${amountDelta >= 0 ? '+' : '-'}¥${Math.abs(amountDelta).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / 当前 ¥${currValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            change: (parseFloat(change) >= 0 ? '+' : '') + change + '%',
+            amountText: amountStr,
             time: formattedDate,
             type: parseFloat(change) >= 0 ? 'up' : 'down'
           });
@@ -2660,14 +3042,16 @@
         
         for (let i = 0; i < randomChangesCount; i++) {
           const asset = shuffledAssets[i];
-          const randomChange = (Math.random() * 3 - 1).toFixed(2); // -1% 到 2% 之间的随机变化
+          const randomChange = (Math.random() * 3 - 1).toFixed(2);
           const baseValue = lastRow[asset] || 0;
           const amountDelta = baseValue * (parseFloat(randomChange) / 100);
-          
+          const rsign = amountDelta >= 0 ? '+' : '-';
+          const rAmountStr = rsign + '¥' + Math.abs(amountDelta).toLocaleString('zh-CN', moneyFmtOpts) + ' / 当前 ¥' + baseValue.toLocaleString('zh-CN', moneyFmtOpts);
+
           recentChanges.push({
             asset,
-            change: `${parseFloat(randomChange) >= 0 ? '+' : ''}${randomChange}%`,
-            amountText: `${amountDelta >= 0 ? '+' : '-'}¥${Math.abs(amountDelta).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / 当前 ¥${baseValue.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            change: (parseFloat(randomChange) >= 0 ? '+' : '') + randomChange + '%',
+            amountText: rAmountStr,
             time: formattedDate,
             type: parseFloat(randomChange) >= 0 ? 'up' : 'down'
           });
@@ -2687,20 +3071,20 @@
         const colorClass = change.type === 'up' ? 'text-success' : 'text-danger';
         const iconClass = change.type === 'up' ? 'fa-arrow-up' : 'fa-arrow-down';
         
-        changeEl.className = 'flex justify-between items-center p-3 border border-light-2 rounded-lg hover:border-primary/30 transition-colors';
+        changeEl.className = 'flex justify-between items-center p-2.5 sm:p-3 border border-light-2 rounded-lg hover:border-primary/30 transition-colors';
         changeEl.innerHTML = `
-          <div class="flex items-center">
-            <div class="w-8 h-8 rounded-full ${change.type === 'up' ? 'bg-success/10' : 'bg-danger/10'} flex items-center justify-center mr-3">
-              <i class="fa ${iconClass} ${colorClass}"></i>
+          <div class="flex items-center min-w-0">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ${change.type === 'up' ? 'bg-success/10' : 'bg-danger/10'} flex items-center justify-center mr-2 sm:mr-3 shrink-0">
+              <i class="fa ${iconClass} ${colorClass} text-xs sm:text-sm"></i>
             </div>
-            <div>
-              <p class="font-medium text-sm">${change.asset}</p>
+            <div class="min-w-0">
+              <p class="font-medium text-xs sm:text-sm truncate">${change.asset}</p>
               <p class="text-dark-2 text-xs">${change.time}</p>
             </div>
           </div>
-          <div class="text-right">
-            <p class="text-sm font-medium ${colorClass}">${change.change}</p>
-            <p class="text-xs ${colorClass}">${change.amountText}</p>
+          <div class="text-right ml-2">
+            <p class="text-xs sm:text-sm font-medium ${colorClass}">${change.change}</p>
+            <p class="text-xs ${colorClass} break-all">${change.amountText}</p>
           </div>
         `;
         
@@ -3146,6 +3530,10 @@
       if (assetCategorySankeyChart) {
         assetCategorySankeyChart.dispose();
         assetCategorySankeyChart = null;
+      }
+      if (drawdownChart) {
+        drawdownChart.destroy();
+        drawdownChart = null;
       }
     }
     

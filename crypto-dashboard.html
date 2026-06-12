@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加密货币资产数据看板</title>
+  <!-- 引入外部资源（与 dashboard.html 保持一致） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+
+  <!-- Tailwind 主题扩展 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#0FC6C2',
+            success: '#00B42A',
+            warning: '#FF7D00',
+            danger: '#F53F3F',
+            dark: '#1D2129',
+            'dark-2': '#4E5969',
+            'light-1': '#F2F3F5',
+            'light-2': '#E5E6EB',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto { content-visibility: auto; }
+      .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); }
+      .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+      .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+      .file-drop-area { border: 2px dashed #cbd5e1; transition: all 0.3s ease; background: #f8fafc; }
+      .file-drop-area.active { border-color: #165DFF; background: #eff6ff; }
+      .file-drop-area-custody { border: 2px dashed #cbd5e1; transition: all 0.3s ease; background: #f8fafc; }
+      .file-drop-area-custody.active { border-color: #0FC6C2; background: #ecfeff; }
+    }
+  </style>
+
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    #txTableBody td, #custodyTableBody td { overflow: hidden; text-overflow: ellipsis; }
+    /* Tab 按钮样式 */
+    .tab-btn {
+      background: #fff;
+      color: #4e5969;
+      border: 1px solid #e5e6eb;
+    }
+    .tab-btn.active {
+      background: #165DFF;
+      color: #fff;
+      border-color: #165DFF;
+    }
+    .tab-btn.active-custody {
+      background: #0FC6C2;
+      color: #fff;
+      border-color: #0FC6C2;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 text-dark min-h-screen">
+  <!-- 顶部导航栏（参考 dashboard.html：fixed + 双层布局） -->
+  <header id="appHeader" class="bg-white shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <!-- 上层：标题 + Tab 切换 + 汇率 -->
+    <div class="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 sm:gap-3">
+        <!-- 左侧：标题 -->
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-7 h-7 sm:w-9 sm:h-9 bg-light-1 rounded-lg flex items-center justify-center shrink-0">
+            <i class="fa fa-line-chart text-primary text-sm sm:text-lg"></i>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-sm sm:text-lg font-bold text-dark truncate">加密货币资产看板</h1>
+            <p class="text-[10px] sm:text-xs text-dark-2 hidden md:block">追踪账户资产变动与托管数据</p>
+          </div>
+        </div>
+        <!-- 右侧：Tab 切换 + 汇率 -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <!-- Tab 切换 -->
+          <div class="flex gap-1.5 sm:gap-2 bg-light-1 rounded-lg p-1">
+            <button id="tabOwn" class="tab-btn active px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all">
+              <i class="fa fa-wallet mr-1"></i> 自有账户
+            </button>
+            <button id="tabCustody" class="tab-btn px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all">
+              <i class="fa fa-shield mr-1"></i> 托管账户
+            </button>
+          </div>
+          <!-- 汇率 -->
+          <div class="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[11px] sm:text-xs" id="rateCards"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 下层（分隔线 + 上传区） -->
+    <div class="border-t border-light-2">
+      <div class="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-2 sm:gap-3">
+          <div class="text-xs sm:text-sm font-medium text-dark-2 whitespace-nowrap shrink-0">
+            <i class="fa fa-database mr-1"></i> 数据导入
+          </div>
+
+          <!-- 动态上传区：根据当前选中 Tab 显示自有账户或托管账户的上传提示 -->
+          <div id="fileDropArea" class="file-drop-area rounded-lg px-3 sm:px-4 py-2 w-full lg:flex-1 text-center cursor-pointer">
+            <input type="file" id="csvFile" accept=".csv" class="hidden" />
+            <p class="text-dark-2 text-xs sm:text-sm">
+              <i class="fa fa-cloud-upload text-primary/70 mr-1"></i>
+              <span id="dropAreaHint">自有账户：拖放 CSV 到此处，或</span>
+              <span class="text-primary font-medium">点击上传</span>
+            </p>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="flex gap-2 w-full lg:w-auto">
+            <button id="btnReset" class="bg-light-1 hover:bg-light-2 text-dark px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors flex items-center justify-center flex-1 lg:flex-none text-xs sm:text-sm whitespace-nowrap">
+              <i class="fa fa-refresh mr-1 sm:mr-2"></i>重置示例
+            </button>
+            <button id="btnClear" class="bg-danger/10 hover:bg-danger/20 text-danger px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors flex items-center justify-center flex-1 lg:flex-none text-xs sm:text-sm whitespace-nowrap">
+              <i class="fa fa-trash mr-1 sm:mr-2"></i>清空
+            </button>
+          </div>
+        </div>
+        <div id="importStatus" class="mt-2 hidden text-xs sm:text-sm"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区：paddingTop 由 JS 动态设置，避免被 fixed header 遮挡 -->
+  <main id="mainContent" class="container mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
+
+    <!-- ========= 自有账户面板 ========= -->
+    <div id="panelOwn">
+
+      <!-- 核心指标 -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8" id="summaryCards"></section>
+
+      <!-- 剩余本金趋势 -->
+      <section class="mb-4 sm:mb-6 lg:mb-8">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="mb-3 sm:mb-5 lg:mb-6">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+              <i class="fa fa-area-chart text-primary"></i> 剩余本金趋势
+            </h3>
+            <p class="text-xs sm:text-sm text-dark-2 mt-1 hidden sm:block">按时间追踪账户本金变化</p>
+          </div>
+          <div class="h-[220px] sm:h-[260px] lg:h-[350px]">
+            <div id="principalTrendChart" style="width:100%;height:100%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 年度收支汇总 + 入金子类型分布 -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="mb-3 sm:mb-5 lg:mb-6">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+              <i class="fa fa-bar-chart text-primary"></i> 年度收支汇总
+            </h3>
+            <p class="text-xs sm:text-sm text-dark-2 mt-1 hidden sm:block">各年度入金、出金及净流入统计</p>
+          </div>
+          <div class="h-[220px] sm:h-[260px] lg:h-[350px]">
+            <div id="yearlyBarChart" style="width:100%;height:100%;"></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="mb-3 sm:mb-5 lg:mb-6">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+              <i class="fa fa-pie-chart text-warning"></i> 入金子类型分布
+            </h3>
+            <p class="text-xs sm:text-sm text-dark-2 mt-1 hidden sm:block">各类入金金额占比</p>
+          </div>
+          <div class="h-[220px] sm:h-[260px] lg:h-[350px]">
+            <div id="depositTypeChart" style="width:100%;height:100%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 月度净收支 -->
+      <section class="mb-4 sm:mb-6 lg:mb-8">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="mb-3 sm:mb-5 lg:mb-6">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+              <i class="fa fa-calendar text-secondary"></i> 月度净收支
+            </h3>
+            <p class="text-xs sm:text-sm text-dark-2 mt-1 hidden sm:block">按月统计入金与出金净额及累计余额</p>
+          </div>
+          <div class="h-[220px] sm:h-[260px] lg:h-[350px]">
+            <div id="monthlyChart" style="width:100%;height:100%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 交易明细表 -->
+      <section class="mb-4 sm:mb-6 lg:mb-8">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-3 mb-3 sm:mb-5">
+            <div>
+              <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+                <i class="fa fa-table text-dark"></i> 交易明细
+              </h3>
+              <p class="text-xs sm:text-sm text-dark-2 mt-1" id="txTableDesc">共 0 条记录</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <select id="typeFilter" class="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 rounded border border-light-2 bg-white focus:outline-none focus:border-primary">
+                <option value="all">全部类型</option>
+                <option value="入金">入金</option>
+                <option value="出金">出金</option>
+              </select>
+              <select id="subTypeFilter" class="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 rounded border border-light-2 bg-white focus:outline-none focus:border-primary">
+                <option value="all">全部子类型</option>
+              </select>
+              <select id="currencyFilter" class="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 rounded border border-light-2 bg-white focus:outline-none focus:border-primary">
+                <option value="all">全部币种</option>
+              </select>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left border-b border-light-2">
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap">日期</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap">类型</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden md:table-cell">子类型</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right hidden sm:table-cell">原始金额</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right">剩余本金</th>
+                </tr>
+              </thead>
+              <tbody id="txTableBody"></tbody>
+            </table>
+          </div>
+          <div id="txTableMore" class="mt-3 text-center hidden">
+            <button id="txLoadMore" class="px-4 py-1.5 bg-primary text-white rounded-lg text-xs sm:text-sm font-semibold hover:bg-primary/90 transition-colors">
+              <i class="fa fa-chevron-down mr-1"></i> 查看更多
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ========= 托管账户面板 ========= -->
+    <div id="panelCustody" style="display:none;">
+
+      <!-- 托管核心指标 -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8" id="custodySummaryCards"></section>
+
+      <!-- 托管趋势 -->
+      <section class="mb-4 sm:mb-6 lg:mb-8">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="mb-3 sm:mb-5 lg:mb-6">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+              <i class="fa fa-area-chart text-secondary"></i> 托管资产趋势
+            </h3>
+            <p class="text-xs sm:text-sm text-dark-2 mt-1 hidden sm:block">按时间追踪托管 OKB 数量变化</p>
+          </div>
+          <div class="h-[220px] sm:h-[260px] lg:h-[350px]">
+            <div id="custodyTrendChart" style="width:100%;height:100%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 托管明细表 -->
+      <section class="mb-4 sm:mb-6 lg:mb-8">
+        <div class="bg-white rounded-xl p-3 sm:p-4 lg:p-6 card-shadow">
+          <div class="mb-3 sm:mb-5">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-1 sm:gap-2">
+              <i class="fa fa-table text-dark"></i> 托管账户明细
+            </h3>
+            <p class="text-xs sm:text-sm text-dark-2 mt-1">共 <span id="custodyCount">0</span> 条记录</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left border-b border-light-2">
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap">日期</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right">托管数量</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right hidden sm:table-cell">估值 (RMB)</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden md:table-cell">状态</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden lg:table-cell">备注</th>
+                </tr>
+              </thead>
+              <tbody id="custodyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <footer class="border-t border-light-2 bg-white">
+    <div class="container mx-auto px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm text-dark-2">
+      <p>加密货币资产看板 · 默认显示示例数据，所有数据仅在浏览器本地处理</p>
+    </div>
+  </footer>
+
+  <!-- ========= 主脚本 ========= -->
+  <script>
+    // ============ 示例数据（不包含任何真实数据） ============
+    const SAMPLE_OWN_CSV = `日期,类型,子类型,金额,备注,剩余本金
+2025-01-10,入金,初始本金,10000 RMB,示例初始本金,10000 RMB
+2025-02-15,入金,工资,8000 RMB,示例月工资,18000 RMB
+2025-03-20,出金,普通出金,2000 RMB,示例出金,16000 RMB
+2025-04-10,入金,工资,8000 RMB,示例月工资,24000 RMB
+2025-05-15,入金,项目奖,3000 USDT,示例项目奖金,45600 RMB
+2025-06-10,入金,工资,8000 RMB,示例月工资,53600 RMB
+2025-07-05,出金,普通出金,5000 RMB,示例出金,48600 RMB
+2025-08-15,入金,OKB激励,10 OKB,示例OKB激励,57100 RMB
+2025-09-10,入金,工资,8000 RMB,示例月工资,65100 RMB
+2025-10-20,出金,大额出金,15000 RMB,示例大额出金,50100 RMB
+2025-11-10,入金,工资,8000 RMB,示例月工资,58100 RMB
+2025-12-15,入金,年终奖,20000 RMB,示例年终奖,78100 RMB
+2026-01-10,入金,工资,8500 RMB,示例月工资,86600 RMB
+2026-02-10,入金,工资,8500 RMB,示例月工资,95100 RMB
+2026-03-10,入金,工资,8500 RMB,示例月工资,103600 RMB
+2026-04-10,入金,长期激励,15000 RMB,示例长期激励,118600 RMB
+2026-05-10,入金,工资,8500 RMB,示例月工资,127100 RMB
+2026-06-10,入金,工资,8500 RMB,示例月工资,135600 RMB`;
+
+    const SAMPLE_CUSTODY_CSV = `日期,托管数量(OKB),状态,备注
+2025-03-10,10,持有,示例托管10 OKB
+2025-06-15,25,持有,示例增加至25 OKB
+2025-09-20,15,持有,示例提取10 OKB
+2025-12-01,40,持有,示例增加至40 OKB
+2026-03-15,30,持有,示例提取10 OKB
+2026-06-01,50,持有,示例最新50 OKB`;
+
+    // ============ 汇率配置 ============
+    const DEFAULT_RATES = {
+      RMB: 1,
+      USDT: 7.2,
+      USD: 7.2,
+      OKB: 85,
+      HKD: 0.93,
+    };
+
+    let currentRates = { ...DEFAULT_RATES };
+
+    // ============ 数据状态标志 ============
+    let ownDataIsSample = true;
+    let custodyDataIsSample = true;
+
+    const moneyFmt = (num) => {
+      if (num === undefined || num === null || isNaN(num)) return '¥0.00';
+      const n = Number(num);
+      const sign = n < 0 ? '-' : '';
+      const abs = Math.abs(n);
+      return sign + '¥' + abs.toLocaleString('zh-CN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    };
+
+    const numFmt = (num, digits) => {
+      const d = digits || 2;
+      if (num === undefined || num === null || isNaN(num)) return '0';
+      return Number(num).toLocaleString('zh-CN', { maximumFractionDigits: d, minimumFractionDigits: d });
+    };
+
+    function parseAmount(amountStr) {
+      if (!amountStr) return { value: 0, currency: 'RMB' };
+      const trimmed = amountStr.trim();
+      const match = trimmed.match(/^([\d.]+)\s*([A-Za-z]+)?$/);
+      if (match) {
+        const value = parseFloat(match[1]) || 0;
+        const currency = (match[2] || 'RMB').toUpperCase();
+        return { value: value, currency: currency };
+      }
+      const numMatch = trimmed.match(/[\d.]+/);
+      return { value: numMatch ? parseFloat(numMatch[0]) : 0, currency: 'RMB' };
+    }
+
+    function toRMB(parsed) {
+      const rate = currentRates[parsed.currency] !== undefined ? currentRates[parsed.currency] : 1;
+      return parsed.value * rate;
+    }
+
+    function amountToRMB(amountStr) {
+      return toRMB(parseAmount(amountStr));
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/).filter(function(l) { return l.trim().length > 0; });
+      if (lines.length === 0) return [];
+      const headers = lines[0].split(',').map(function(h) { return h.trim(); });
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        const values = [];
+        let cur = '';
+        let inQuote = false;
+        for (let j = 0; j < line.length; j++) {
+          const ch = line[j];
+          if (ch === '"') inQuote = !inQuote;
+          else if (ch === ',' && !inQuote) { values.push(cur.trim()); cur = ''; }
+          else cur += ch;
+        }
+        values.push(cur.trim());
+        const row = {};
+        headers.forEach(function(h, idx) { row[h] = values[idx] !== undefined ? values[idx] : ''; });
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    async function loadCSV(url) {
+      // 保留作为代码示例：在浏览器本地 file:// 协议下 fetch 会触发 CORS 错误
+      // 实际应用请通过 FileReader 读取用户上传的文件
+      throw new Error('CSV 加载请使用 FileReader（file:// 协议下 fetch 会触发跨域错误）');
+    }
+
+    let rawTransactions = [];
+    let rawCustody = [];
+    let charts = {};
+    let txShowAll = false; // false = show last year only
+
+    const COLOR_MAP = {
+      primary: '#165DFF',
+      secondary: '#0FC6C2',
+      success: '#00B42A',
+      warning: '#FF7D00',
+      danger: '#F53F3F',
+      dark: '#1D2129'
+    };
+
+    // 按本地时间解析 YYYY-MM-DD 格式（避免 UTC 时区偏差）
+    function parseLocalDate(dateStr) {
+      if (!dateStr) return null;
+      const parts = dateStr.trim().split('-');
+      if (parts.length < 3) return null;
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      return new Date(y, m, d, 0, 0, 0, 0);
+    }
+
+    // 计算最近一年的日期分界点（基于最新交易记录日期 - 1 年）
+    function getOneYearCutoffDate() {
+      if (rawTransactions.length === 0) return null;
+      const lastDate = rawTransactions[rawTransactions.length - 1]['日期'];
+      const d = parseLocalDate(lastDate);
+      if (!d) return null;
+      d.setFullYear(d.getFullYear() - 1);
+      return d;
+    }
+
+    function isWithinLastYear(dateStr) {
+      const cutoff = getOneYearCutoffDate();
+      if (!cutoff) return true;
+      const d = parseLocalDate(dateStr);
+      if (!d) return false;
+      return d >= cutoff;
+    }
+
+    function renderRateCards() {
+      const currencies = [
+        { code: 'OKB', name: 'OKB Token' },
+        { code: 'USDT', name: 'USDT' },
+        { code: 'USD', name: '美元' },
+        { code: 'HKD', name: '港币' }
+      ];
+
+      const container = document.getElementById('rateCards');
+      let html = '';
+      for (let i = 0; i < currencies.length; i++) {
+        const cur = currencies[i];
+        const rate = currentRates[cur.code] || 1;
+        html += '<span class="inline-flex items-center gap-1">' +
+          '<span class="font-medium text-dark-2">' + cur.code + '</span>' +
+          '<span class="font-bold text-dark">≈ ¥' + numFmt(rate, 2) + '</span>' +
+          '</span>';
+        if (i < currencies.length - 1) {
+          html += '<span class="text-dark opacity-30">|</span>';
+        }
+      }
+      container.innerHTML = html;
+    }
+
+    // ============ 自有账户渲染 ============
+
+    function renderSummaryCards() {
+      let totalDeposit = 0;
+      let totalWithdrawal = 0;
+      for (let i = 0; i < rawTransactions.length; i++) {
+        const r = rawTransactions[i];
+        const rmb = amountToRMB(r['金额']);
+        if (r['类型'] === '入金') totalDeposit += rmb;
+        else if (r['类型'] === '出金') totalWithdrawal += rmb;
+      }
+      const netFlow = totalDeposit - totalWithdrawal;
+      const lastRow = rawTransactions[rawTransactions.length - 1];
+      const currentPrincipal = lastRow ? amountToRMB(lastRow['剩余本金']) : 0;
+
+      const cards = [
+        { title: '当前本金', value: moneyFmt(currentPrincipal), icon: 'fa-money', color: 'primary', sub: '最近交易时的本金余额' },
+        { title: '累计入金', value: moneyFmt(totalDeposit), icon: 'fa-arrow-down', color: 'success', sub: rawTransactions.filter(function(r) { return r['类型'] === '入金'; }).length + ' 笔交易' },
+        { title: '累计出金', value: moneyFmt(totalWithdrawal), icon: 'fa-arrow-up', color: 'danger', sub: rawTransactions.filter(function(r) { return r['类型'] === '出金'; }).length + ' 笔交易' },
+        { title: '净流入', value: moneyFmt(netFlow), icon: 'fa-balance-scale', color: netFlow >= 0 ? 'secondary' : 'warning', sub: '入金 - 出金' }
+      ];
+
+      const container = document.getElementById('summaryCards');
+      const isMobile = window.innerWidth < 768;
+      let html = '';
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const colorHex = COLOR_MAP[card.color];
+        html += '<div class="bg-white rounded-xl p-3 sm:p-4 lg:p-5 card-shadow hover-lift">' +
+          '<div class="flex justify-between items-start mb-2 sm:mb-3">' +
+          '<div class="min-w-0 flex-1">' +
+          '<p class="text-xs sm:text-sm text-dark-2">' + card.title + '</p>' +
+          '<h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-dark mt-1 break-all">' + card.value + '</h3>' +
+          '</div>' +
+          '<div class="w-8 h-8 sm:w-11 sm:h-11 rounded-lg flex items-center justify-center shrink-0" style="background:' + colorHex + '1A; color:' + colorHex + ';">' +
+          '<i class="fa ' + card.icon + ' text-sm sm:text-lg"></i>' +
+          '</div>' +
+          '</div>' +
+          '<p class="text-xs sm:text-sm text-dark-2 mt-1 truncate" title="' + card.sub + '">' + card.sub + '</p>' +
+          '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function renderPrincipalTrend() {
+      const dates = rawTransactions.map(function(r) { return r['日期']; });
+      const principals = rawTransactions.map(function(r) { return amountToRMB(r['剩余本金']); });
+      const amounts = rawTransactions.map(function(r) {
+        const rmb = amountToRMB(r['金额']);
+        return r['类型'] === '出金' ? -rmb : rmb;
+      });
+
+      if (charts.principalTrend) charts.principalTrend.dispose();
+      charts.principalTrend = echarts.init(document.getElementById('principalTrendChart'));
+      const isMobile = window.innerWidth < 768;
+
+      charts.principalTrend.setOption({
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross', label: { backgroundColor: '#165DFF' } },
+          formatter: function(params) {
+            const d = params[0], p = params[1];
+            let html = '<div style="font-weight:bold; margin-bottom:6px;">' + d.axisValue + '</div>';
+            if (d) html += '<div style="font-size:12px;">单笔变动：<span style="color:' + (d.value >= 0 ? '#00B42A' : '#F53F3F') + '; font-weight:bold;">' + moneyFmt(d.value) + '</span></div>';
+            if (p) html += '<div style="font-size:12px;">剩余本金：<span style="color:#165DFF; font-weight:bold;">' + moneyFmt(p.value) + '</span></div>';
+            return html;
+          }
+        },
+        legend: { data: ['单笔变动', '剩余本金'], bottom: 0, textStyle: { fontSize: isMobile ? 10 : 11 } },
+        grid: isMobile
+          ? { left: 50, right: 50, top: 15, bottom: 40 }
+          : { left: 70, right: 70, top: 20, bottom: 40 },
+        xAxis: { type: 'category', data: dates, boundaryGap: false, axisLabel: { fontSize: 10, rotate: 45, hideOverlap: true } },
+        yAxis: [
+          { type: 'value', name: '单笔', position: 'left', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } },
+          { type: 'value', name: '本金', position: 'right', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } }
+        ],
+        dataZoom: [{ type: 'inside', start: 0, end: 100 }, { type: 'slider', start: 0, end: 100, height: 20, bottom: 25 }],
+        series: [
+          { name: '单笔变动', type: 'bar', yAxisIndex: 0, data: amounts, itemStyle: { color: function(params) { return params.data >= 0 ? '#00B42A' : '#F53F3F'; } }, barMaxWidth: 20 },
+          { name: '剩余本金', type: 'line', yAxisIndex: 1, data: principals, smooth: true, symbol: 'circle', symbolSize: 4, lineStyle: { color: '#165DFF', width: 2 }, itemStyle: { color: '#165DFF' },
+            areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(22, 93, 255, 0.25)' }, { offset: 1, color: 'rgba(22, 93, 255, 0.02)' }]) } }
+        ]
+      });
+    }
+
+    function renderDepositTypeChart() {
+      const subTypeMap = {};
+      rawTransactions.filter(function(r) { return r['类型'] === '入金'; }).forEach(function(r) {
+        const rmb = amountToRMB(r['金额']);
+        if (rmb <= 0) return;
+        const subType = r['子类型'] || '其他';
+        subTypeMap[subType] = (subTypeMap[subType] || 0) + rmb;
+      });
+      const pieData = Object.keys(subTypeMap).map(function(k) { return { name: k, value: subTypeMap[k] }; });
+      pieData.sort(function(a, b) { return b.value - a.value; });
+
+      if (charts.depositType) charts.depositType.dispose();
+      charts.depositType = echarts.init(document.getElementById('depositTypeChart'));
+      const colors = ['#165DFF', '#0FC6C2', '#00B42A', '#FF7D00', '#F53F3F', '#722ED1', '#FADB14', '#13C2C2'];
+      const isMobilePie = window.innerWidth < 768;
+
+      charts.depositType.setOption({
+        tooltip: { trigger: 'item', formatter: function(p) { return '<div style="font-weight:bold;">' + p.name + '</div>金额：' + moneyFmt(p.value) + '<br/>占比：' + p.percent + '%'; } },
+        legend: isMobilePie
+          ? { bottom: 0, textStyle: { fontSize: 10 } }
+          : { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 } },
+        color: colors,
+        series: [{
+          type: 'pie', radius: ['40%', '70%'], center: isMobilePie ? ['50%', '45%'] : ['40%', '50%'], avoidLabelOverlap: true,
+          itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+          label: { show: true, formatter: '{b}\n{d}%', fontSize: isMobilePie ? 9 : 10 },
+          labelLine: { length: 10, length2: 10 },
+          data: pieData
+        }]
+      });
+    }
+
+    function renderYearlyBarChart() {
+      const yearMap = {};
+      for (let i = 0; i < rawTransactions.length; i++) {
+        const r = rawTransactions[i];
+        const year = (r['日期'] || '').split('-')[0] || '未知';
+        const rmb = amountToRMB(r['金额']);
+        if (!yearMap[year]) yearMap[year] = { deposit: 0, withdrawal: 0 };
+        if (r['类型'] === '入金') yearMap[year].deposit += rmb;
+        else if (r['类型'] === '出金') yearMap[year].withdrawal += rmb;
+      }
+      const years = Object.keys(yearMap).sort();
+      const deposits = years.map(function(y) { return yearMap[y].deposit; });
+      const withdrawals = years.map(function(y) { return yearMap[y].withdrawal; });
+      const nets = years.map(function(y) { return yearMap[y].deposit - yearMap[y].withdrawal; });
+
+      if (charts.yearlyBar) charts.yearlyBar.dispose();
+      charts.yearlyBar = echarts.init(document.getElementById('yearlyBarChart'));
+      const isMobileYearly = window.innerWidth < 768;
+
+      charts.yearlyBar.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+          formatter: function(params) {
+            let html = '<div style="font-weight:bold;">' + params[0].axisValue + '</div>';
+            for (let i = 0; i < params.length; i++) {
+              html += '<div>' + params[i].marker + params[i].seriesName + '：' + moneyFmt(params[i].value) + '</div>';
+            }
+            return html;
+          }
+        },
+        legend: { data: ['入金', '出金', '净流入'], bottom: 0, textStyle: { fontSize: isMobileYearly ? 10 : 11 } },
+        grid: isMobileYearly
+          ? { left: 50, right: 10, top: 15, bottom: 40 }
+          : { left: 70, right: 20, top: 20, bottom: 40 },
+        xAxis: { type: 'category', data: years, axisLabel: { fontSize: isMobileYearly ? 10 : 11 } },
+        yAxis: { type: 'value', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } },
+        series: [
+          { name: '入金', type: 'bar', data: deposits, itemStyle: { color: '#00B42A', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 40 },
+          { name: '出金', type: 'bar', data: withdrawals, itemStyle: { color: '#F53F3F', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 40 },
+          { name: '净流入', type: 'line', data: nets, smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: '#165DFF', width: 2 }, itemStyle: { color: '#165DFF' } }
+        ]
+      });
+    }
+
+    function renderMonthlyChart() {
+      const monthMap = {};
+      for (let i = 0; i < rawTransactions.length; i++) {
+        const r = rawTransactions[i];
+        const date = r['日期'] || '';
+        const parts = date.split('-');
+        if (parts.length < 2) continue;
+        const month = parts[0] + '-' + parts[1];
+        const rmb = amountToRMB(r['金额']);
+        if (!monthMap[month]) monthMap[month] = { deposit: 0, withdrawal: 0 };
+        if (r['类型'] === '入金') monthMap[month].deposit += rmb;
+        else if (r['类型'] === '出金') monthMap[month].withdrawal += rmb;
+      }
+      const months = Object.keys(monthMap).sort();
+      const deposits = months.map(function(m) { return monthMap[m].deposit; });
+      const withdrawals = months.map(function(m) { return -monthMap[m].withdrawal; });
+      const nets = months.map(function(m) { return monthMap[m].deposit - monthMap[m].withdrawal; });
+      let cumulative = 0;
+      const cumulatives = nets.map(function(n) { cumulative += n; return cumulative; });
+
+      if (charts.monthly) charts.monthly.dispose();
+      charts.monthly = echarts.init(document.getElementById('monthlyChart'));
+      const isMobileMonthly = window.innerWidth < 768;
+
+      charts.monthly.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+          formatter: function(params) {
+            let html = '<div style="font-weight:bold;">' + params[0].axisValue + '</div>';
+            for (let i = 0; i < params.length; i++) {
+              html += '<div>' + params[i].marker + params[i].seriesName + '：' + moneyFmt(params[i].value) + '</div>';
+            }
+            return html;
+          }
+        },
+        legend: { data: ['入金', '出金', '月度净额', '累计余额'], bottom: 0, textStyle: { fontSize: isMobileMonthly ? 10 : 11 } },
+        grid: isMobileMonthly
+          ? { left: 50, right: 50, top: 15, bottom: 50 }
+          : { left: 70, right: 70, top: 20, bottom: 50 },
+        xAxis: { type: 'category', data: months, axisLabel: { fontSize: 10, rotate: 45, hideOverlap: true } },
+        yAxis: [
+          { type: 'value', name: '月度', position: 'left', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } },
+          { type: 'value', name: '累计', position: 'right', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } }
+        ],
+        dataZoom: [{ type: 'inside', start: 0, end: 100 }, { type: 'slider', start: 0, end: 100, height: 20, bottom: 30 }],
+        series: [
+          { name: '入金', type: 'bar', stack: 'a', yAxisIndex: 0, data: deposits, itemStyle: { color: '#00B42A' }, barMaxWidth: 30 },
+          { name: '出金', type: 'bar', stack: 'a', yAxisIndex: 0, data: withdrawals, itemStyle: { color: '#F53F3F' }, barMaxWidth: 30 },
+          { name: '月度净额', type: 'bar', yAxisIndex: 0, data: nets, itemStyle: { color: '#FF7D00', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 20, barGap: '30%' },
+          { name: '累计余额', type: 'line', yAxisIndex: 1, data: cumulatives, smooth: true, symbol: 'circle', symbolSize: 5, lineStyle: { color: '#165DFF', width: 2 }, itemStyle: { color: '#165DFF' } }
+        ]
+      });
+    }
+
+    function renderTxTable() {
+      const typeFilter = document.getElementById('typeFilter').value;
+      const subFilter = document.getElementById('subTypeFilter').value;
+      const curFilter = document.getElementById('currencyFilter').value;
+
+      let filtered = rawTransactions;
+      if (typeFilter !== 'all') filtered = filtered.filter(function(r) { return r['类型'] === typeFilter; });
+      if (subFilter !== 'all') filtered = filtered.filter(function(r) { return r['子类型'] === subFilter; });
+      if (curFilter !== 'all') filtered = filtered.filter(function(r) { return parseAmount(r['金额']).currency === curFilter; });
+
+      // 应用最近一年筛选
+      let yearFiltered = filtered;
+      if (!txShowAll) {
+        yearFiltered = filtered.filter(function(r) { return isWithinLastYear(r['日期']); });
+      }
+
+      // 更新描述文本（显示日期范围）
+      const cutoff = getOneYearCutoffDate();
+      const lastDate = rawTransactions.length > 0 ? rawTransactions[rawTransactions.length - 1]['日期'] : '';
+      const descEl = document.getElementById('txTableDesc');
+      if (txShowAll) {
+        descEl.innerHTML = '共 <b>' + filtered.length + '</b> 条记录（显示全部，共 ' + (filtered.length > 0 ? (filtered[0]['日期'] + ' ~ ' + lastDate) : '-') + '）';
+      } else {
+        const cutoffStr = cutoff ? cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0') : '-';
+        descEl.innerHTML = '共 <b>' + filtered.length + '</b> 条记录（默认仅显示最近 1 年：' + cutoffStr + ' ~ ' + lastDate + '，当前显示 ' + yearFiltered.length + ' 条）';
+      }
+
+      const tbody = document.getElementById('txTableBody');
+      let html = '';
+
+      const displayData = yearFiltered;
+
+      for (let i = displayData.length - 1; i >= 0; i--) {
+        const r = displayData[i];
+        const parsed = parseAmount(r['金额']);
+        const principal = amountToRMB(r['剩余本金']);
+        const isDeposit = r['类型'] === '入金';
+        const typeColor = isDeposit ? 'background:#e6f7ec; color:#00B42A;' : 'background:#fdecec; color:#F53F3F;';
+        const principalColor = principal >= 0 ? 'color:#1D2129;' : 'color:#F53F3F;';
+        html += '<tr class="border-b border-light-2 hover:bg-gray-50">' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-dark-2 text-xs sm:text-sm">' + r['日期'] + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3"><span class="inline-block px-2 py-0.5 rounded-md text-xs sm:text-sm" style="' + typeColor + '">' + r['类型'] + '</span></td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell text-xs sm:text-sm">' + (r['子类型'] || '-') + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-dark-2 hidden sm:table-cell text-xs sm:text-sm">' + numFmt(parsed.value, 2) + ' ' + parsed.currency + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-xs sm:text-sm" style="' + principalColor + '">' + moneyFmt(principal) + '</td>' +
+          '</tr>';
+      }
+      if (displayData.length === 0) {
+        html = '<tr><td colspan="3" class="px-4 py-6 sm:py-10 text-center text-dark-2 text-xs sm:text-sm">暂无匹配记录</td></tr>';
+      }
+      tbody.innerHTML = html;
+
+      // 查看更多按钮（可双向切换）
+      const moreDiv = document.getElementById('txTableMore');
+      const loadMoreBtn = document.getElementById('txLoadMore');
+      if (!txShowAll && yearFiltered.length < filtered.length) {
+        moreDiv.classList.remove('hidden');
+        loadMoreBtn.innerHTML = '<i class="fa fa-chevron-down mr-0.5"></i> 查看全部 (' + filtered.length + ' 条)';
+        loadMoreBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+        loadMoreBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+      } else if (txShowAll && filtered.length > yearFiltered.length) {
+        moreDiv.classList.remove('hidden');
+        loadMoreBtn.innerHTML = '<i class="fa fa-chevron-up mr-0.5"></i> 仅显示最近 1 年';
+        loadMoreBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        loadMoreBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+      } else {
+        moreDiv.classList.add('hidden');
+      }
+    }
+
+    function populateFilters() {
+      const subTypes = [];
+      const currencies = [];
+      for (let i = 0; i < rawTransactions.length; i++) {
+        const r = rawTransactions[i];
+        if (r['子类型'] && subTypes.indexOf(r['子类型']) === -1) subTypes.push(r['子类型']);
+        const cur = parseAmount(r['金额']).currency;
+        if (currencies.indexOf(cur) === -1) currencies.push(cur);
+      }
+
+      const selSub = document.getElementById('subTypeFilter');
+      let subHtml = '<option value="all">全部子类型</option>';
+      for (let i = 0; i < subTypes.length; i++) {
+        subHtml += '<option value="' + subTypes[i] + '">' + subTypes[i] + '</option>';
+      }
+      selSub.innerHTML = subHtml;
+
+      const selCur = document.getElementById('currencyFilter');
+      let curHtml = '<option value="all">全部币种</option>';
+      for (let i = 0; i < currencies.length; i++) {
+        curHtml += '<option value="' + currencies[i] + '">' + currencies[i] + '</option>';
+      }
+      selCur.innerHTML = curHtml;
+    }
+
+    // ============ 托管账户渲染 ============
+
+    function renderCustodySummaryCards() {
+      const container = document.getElementById('custodySummaryCards');
+      if (rawCustody.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-xs sm:text-sm col-span-2 sm:col-span-2 md:col-span-4 text-center py-5">暂无托管账户数据</p>';
+        return;
+      }
+
+      const okbRate = currentRates.OKB || 1;
+      const lastRow = rawCustody[rawCustody.length - 1];
+      const currentOKB = parseFloat(lastRow['托管数量(OKB)']) || 0;
+      const currentRMB = currentOKB * okbRate;
+
+      let maxOKB = 0;
+      let minOKB = Infinity;
+      for (let i = 0; i < rawCustody.length; i++) {
+        const okb = parseFloat(rawCustody[i]['托管数量(OKB)']) || 0;
+        if (okb > maxOKB) maxOKB = okb;
+        if (okb < minOKB) minOKB = okb;
+      }
+
+      const records = rawCustody.length;
+      const lastDate = lastRow['日期'];
+
+      const cards = [
+        { title: '当前托管 OKB', value: numFmt(currentOKB, 4) + ' OKB', icon: 'fa-circle-o-notch', color: 'primary', sub: '最新记录：' + lastDate },
+        { title: '当前估值 (RMB)', value: moneyFmt(currentRMB), icon: 'fa-money', color: 'success', sub: '1 OKB ≈ ¥' + numFmt(okbRate, 2) },
+        { title: '历史峰值 OKB', value: numFmt(maxOKB, 4) + ' OKB', icon: 'fa-trophy', color: 'warning', sub: moneyFmt(maxOKB * okbRate) + ' (换算)' },
+        { title: '托管记录', value: records + ' 条', icon: 'fa-file-text-o', color: 'secondary', sub: '从 ' + rawCustody[0]['日期'] + ' 起' }
+      ];
+
+      let html = '';
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const colorHex = COLOR_MAP[card.color];
+        html += '<div class="bg-white rounded-xl p-3 sm:p-4 lg:p-5 card-shadow hover-lift">' +
+          '<div class="flex justify-between items-start mb-2 sm:mb-3">' +
+          '<div class="min-w-0 flex-1">' +
+          '<p class="text-xs sm:text-sm text-dark-2">' + card.title + '</p>' +
+          '<h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-dark mt-1 break-all">' + card.value + '</h3>' +
+          '</div>' +
+          '<div class="w-8 h-8 sm:w-11 sm:h-11 rounded-lg flex items-center justify-center shrink-0" style="background:' + colorHex + '1A; color:' + colorHex + ';">' +
+          '<i class="fa ' + card.icon + ' text-sm sm:text-lg"></i>' +
+          '</div>' +
+          '</div>' +
+          '<p class="text-xs sm:text-sm text-dark-2 mt-1 truncate" title="' + card.sub + '">' + card.sub + '</p>' +
+          '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function renderCustodyTrendChart() {
+      if (charts.custodyTrend) charts.custodyTrend.dispose();
+
+      const container = document.getElementById('custodyTrendChart');
+      charts.custodyTrend = echarts.init(container);
+      const isMobileCustody = window.innerWidth < 768;
+
+      const dates = rawCustody.map(function(r) { return r['日期']; });
+      const okbAmounts = rawCustody.map(function(r) { return parseFloat(r['托管数量(OKB)']) || 0; });
+      const okbRate = currentRates.OKB || 1;
+      const rmbAmounts = okbAmounts.map(function(v) { return v * okbRate; });
+
+      charts.custodyTrend.setOption({
+        tooltip: {
+          trigger: 'axis',
+          formatter: function(params) {
+            const d = params[0];
+            const okbVal = okbAmounts[d.dataIndex];
+            return '<div style="font-weight:bold;">' + d.axisValue + '</div>' +
+              '<div>持有：<b>' + numFmt(okbVal, 4) + ' OKB</b></div>' +
+              '<div>估值：<b>' + moneyFmt(okbVal * okbRate) + '</b></div>';
+          }
+        },
+        legend: { data: ['OKB 数量', '估值 (RMB)'], bottom: 0, textStyle: { fontSize: isMobileCustody ? 10 : 11 } },
+        grid: isMobileCustody
+          ? { left: 50, right: 50, top: 15, bottom: 40 }
+          : { left: 70, right: 70, top: 20, bottom: 40 },
+        xAxis: { type: 'category', data: dates, boundaryGap: false, axisLabel: { fontSize: 10, rotate: 45, hideOverlap: true } },
+        yAxis: [
+          { type: 'value', name: 'OKB', position: 'left', axisLabel: { fontSize: 10, formatter: function(v) { return numFmt(v, 2); } } },
+          { type: 'value', name: 'RMB', position: 'right', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } }
+        ],
+        dataZoom: [{ type: 'inside', start: 0, end: 100 }, { type: 'slider', start: 0, end: 100, height: 20, bottom: 25 }],
+        series: [
+          {
+            name: 'OKB 数量', type: 'line', yAxisIndex: 0, data: okbAmounts, smooth: true, symbol: 'circle', symbolSize: 6,
+            lineStyle: { color: '#0FC6C2', width: 2 }, itemStyle: { color: '#0FC6C2' },
+            areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(15, 198, 194, 0.3)' }, { offset: 1, color: 'rgba(15, 198, 194, 0.02)' }]) }
+          },
+          {
+            name: '估值 (RMB)', type: 'line', yAxisIndex: 1, data: rmbAmounts, smooth: true, symbol: 'circle', symbolSize: 4,
+            lineStyle: { color: '#165DFF', width: 2 }, itemStyle: { color: '#165DFF' }
+          }
+        ]
+      });
+    }
+
+    function renderCustodyTable() {
+      document.getElementById('custodyCount').textContent = rawCustody.length;
+      const tbody = document.getElementById('custodyTableBody');
+      const okbRate = currentRates.OKB || 1;
+
+      let html = '';
+      for (let i = rawCustody.length - 1; i >= 0; i--) {
+        const r = rawCustody[i];
+        const okb = parseFloat(r['托管数量(OKB)']) || 0;
+        const status = r['状态'] || '-';
+        let statusStyle;
+        if (status === '持有') statusStyle = 'background:#e6f7ec; color:#00B42A;';
+        else if (status === '已提取') statusStyle = 'background:#fdecec; color:#F53F3F;';
+        else statusStyle = 'background:#f5f5f5; color:#666;';
+        html += '<tr class="border-b border-light-2 hover:bg-gray-50">' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-dark-2 text-xs sm:text-sm">' + r['日期'] + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-primary text-xs sm:text-sm">' + numFmt(okb, 4) + ' OKB</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-dark-2 hidden sm:table-cell text-xs sm:text-sm">' + moneyFmt(okb * okbRate) + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell"><span class="inline-block px-2 py-0.5 rounded-md text-xs sm:text-sm" style="' + statusStyle + '">' + status + '</span></td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-dark-2 hidden lg:table-cell text-xs sm:text-sm">' + (r['备注'] || '-') + '</td>' +
+          '</tr>';
+      }
+      if (rawCustody.length === 0) {
+        html = '<tr><td colspan="2" class="px-4 py-6 sm:py-10 text-center text-dark-2 text-xs sm:text-sm">暂无托管记录</td></tr>';
+      }
+      tbody.innerHTML = html;
+    }
+
+    // ============ 统一渲染 ============
+
+    function resizeCharts() {
+      Object.values(charts).forEach(function(c) { c.resize(); });
+    }
+    window.addEventListener('resize', resizeCharts);
+
+    function renderAll() {
+      // 自有账户
+      renderSummaryCards();
+      renderPrincipalTrend();
+      renderDepositTypeChart();
+      renderYearlyBarChart();
+      renderMonthlyChart();
+      renderTxTable();
+
+      // 托管账户
+      renderCustodySummaryCards();
+      renderCustodyTrendChart();
+      renderCustodyTable();
+
+      // 汇率
+      renderRateCards();
+    }
+
+    // Tab 切换（自有账户 = 蓝色，托管账户 = 青色，同时更新上传区提示）
+    let currentTab = 'own';
+    function switchTab(tab) {
+      const btnOwn = document.getElementById('tabOwn');
+      const btnCustody = document.getElementById('tabCustody');
+      const panelOwn = document.getElementById('panelOwn');
+      const panelCustody = document.getElementById('panelCustody');
+      const dropArea = document.getElementById('fileDropArea');
+      const hint = document.getElementById('dropAreaHint');
+
+      // 重置两个按钮的样式类
+      btnOwn.classList.remove('active', 'active-custody');
+      btnCustody.classList.remove('active', 'active-custody');
+
+      if (tab === 'own') {
+        btnOwn.classList.add('active');
+        panelOwn.style.display = 'block';
+        panelCustody.style.display = 'none';
+        if (hint) hint.textContent = '自有账户：拖放 CSV 到此处，或';
+        if (dropArea) { dropArea.classList.remove('file-drop-area-custody'); dropArea.classList.add('file-drop-area'); }
+        showStatus('当前显示自有账户数据，共 ' + rawTransactions.length + ' 条记录', 'info');
+      } else {
+        btnCustody.classList.add('active-custody');
+        panelCustody.style.display = 'block';
+        panelOwn.style.display = 'none';
+        if (hint) hint.textContent = '托管账户：拖放 CSV 到此处，或';
+        if (dropArea) { dropArea.classList.remove('file-drop-area'); dropArea.classList.add('file-drop-area-custody'); }
+        showStatus('当前显示托管账户数据，共 ' + rawCustody.length + ' 条记录', 'info');
+      }
+      currentTab = tab;
+
+      // Tab 切换后需要 resize 图表（隐藏状态下尺寸为 0）
+      setTimeout(resizeCharts, 50);
+    }
+
+    // ============ 统一状态提示 ============
+    function showStatus(msg, type) {
+      const el = document.getElementById('importStatus');
+      if (!el) return;
+      const colors = { info: 'text-gray-500', success: 'text-green-600', error: 'text-red-600', warning: 'text-orange-500' };
+      el.className = 'mt-2 text-xs sm:text-sm ' + (colors[type] || 'text-gray-500');
+      el.classList.remove('hidden');
+      const isSample = (currentTab === 'own') ? ownDataIsSample : custodyDataIsSample;
+      const sourceLabel = isSample ? '【示例数据】' : '【您的数据】';
+      el.innerHTML = sourceLabel + ' ' + msg;
+    }
+
+    // ============ 动态同步 main 区域的 paddingTop（避免被 fixed header 遮挡）============
+    function syncMainOffset() {
+      const header = document.getElementById('appHeader');
+      const main = document.getElementById('mainContent');
+      if (!header || !main) return;
+      main.style.paddingTop = (header.offsetHeight + 16) + 'px';
+    }
+
+    // ============ CSV 文件上传（统一上传区，根据当前 Tab 决定上传到哪个账户）============
+    function setupUnifiedUpload() {
+      const dropArea = document.getElementById('fileDropArea');
+      const fileInput = document.getElementById('csvFile');
+      const btnReset = document.getElementById('btnReset');
+      const btnClear = document.getElementById('btnClear');
+
+      // 点击上传
+      dropArea.addEventListener('click', function(e) {
+        if (e.target === btnReset || e.target === btnClear || e.target.closest('#btnReset') || e.target.closest('#btnClear')) return;
+        fileInput.click();
+      });
+
+      // 拖放支持
+      dropArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropArea.classList.add('active');
+      });
+      dropArea.addEventListener('dragleave', function() {
+        dropArea.classList.remove('active');
+      });
+      dropArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropArea.classList.remove('active');
+        if (e.dataTransfer.files.length) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      // 文件选择
+      fileInput.addEventListener('change', function() {
+        if (fileInput.files.length) {
+          handleFile(fileInput.files[0]);
+          fileInput.value = '';
+        }
+      });
+
+      // 重置按钮：根据当前 Tab 恢复对应示例数据
+      btnReset.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (currentTab === 'own') {
+          rawTransactions = parseCSV(SAMPLE_OWN_CSV);
+          ownDataIsSample = true;
+          populateFilters();
+          renderAll();
+          showStatus('已恢复为示例数据，共 ' + rawTransactions.length + ' 条记录', 'info');
+        } else {
+          rawCustody = parseCSV(SAMPLE_CUSTODY_CSV);
+          custodyDataIsSample = true;
+          renderCustodySummaryCards();
+          renderCustodyTrendChart();
+          renderCustodyTable();
+          resizeCharts();
+          showStatus('已恢复为示例数据，共 ' + rawCustody.length + ' 条记录', 'info');
+        }
+      });
+
+      // 清空按钮：根据当前 Tab 清空对应数据
+      btnClear.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (currentTab === 'own') {
+          rawTransactions = [];
+          ownDataIsSample = false;
+          populateFilters();
+          renderAll();
+          showStatus('已清空自有账户数据', 'warning');
+        } else {
+          rawCustody = [];
+          custodyDataIsSample = false;
+          renderCustodySummaryCards();
+          renderCustodyTrendChart();
+          renderCustodyTable();
+          resizeCharts();
+          showStatus('已清空托管账户数据', 'warning');
+        }
+      });
+    }
+
+    function handleFile(file) {
+      if (!file.name.endsWith('.csv')) {
+        showStatus('请上传 CSV 格式文件', 'error');
+        return;
+      }
+      showStatus('正在解析文件...', 'info');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = parseCSV(e.target.result);
+          if (data.length === 0) {
+            showStatus('CSV 文件内容为空', 'warning');
+            return;
+          }
+          if (currentTab === 'own') {
+            rawTransactions = data;
+            ownDataIsSample = false;
+            populateFilters();
+            renderAll();
+            showStatus('自有账户文件导入成功，共 ' + data.length + ' 条记录', 'success');
+          } else {
+            rawCustody = data;
+            custodyDataIsSample = false;
+            renderCustodySummaryCards();
+            renderCustodyTrendChart();
+            renderCustodyTable();
+            resizeCharts();
+            showStatus('托管账户文件导入成功，共 ' + data.length + ' 条记录', 'success');
+          }
+        } catch (err) {
+          showStatus('解析文件时出错: ' + err.message, 'error');
+        }
+      };
+      reader.onerror = function() { showStatus('读取文件失败', 'error'); };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    // ============ 主程序入口 ============
+    async function main() {
+      try {
+        // 1. 默认加载示例数据（不读取任何外部文件，避免数据泄露）
+        rawTransactions = parseCSV(SAMPLE_OWN_CSV);
+        rawCustody = parseCSV(SAMPLE_CUSTODY_CSV);
+        ownDataIsSample = true;
+        custodyDataIsSample = true;
+
+        // 2. 渲染页面
+        populateFilters();
+        renderAll();
+
+        // 3. 初始化主内容 paddingTop（避免被 fixed header 遮挡）
+        syncMainOffset();
+
+        // 4. 显示默认 Tab（自有账户）的数据状态
+        showStatus('当前显示示例数据，共 ' + rawTransactions.length + ' 条记录，可上传您的 CSV', 'info');
+
+        // 5. Tab 绑定
+        document.getElementById('tabOwn').addEventListener('click', function() { switchTab('own'); });
+        document.getElementById('tabCustody').addEventListener('click', function() { switchTab('custody'); });
+
+        // 6. 自有账户筛选绑定
+        document.getElementById('typeFilter').addEventListener('change', renderTxTable);
+        document.getElementById('subTypeFilter').addEventListener('change', renderTxTable);
+        document.getElementById('currencyFilter').addEventListener('change', renderTxTable);
+
+        // 7. 查看更多（切换最近一年 / 全部 - 双向切换）
+        const loadMoreBtn = document.getElementById('txLoadMore');
+        loadMoreBtn.addEventListener('click', function() {
+          txShowAll = !txShowAll;
+          renderTxTable();
+        });
+
+        // 8. 初始化统一上传功能
+        setupUnifiedUpload();
+
+        // 9. 窗口 resize：同步 paddingTop 并 resize 图表
+        window.addEventListener('resize', function() {
+          syncMainOffset();
+          resizeCharts();
+        });
+
+        // 10. 字体/图片加载完成后再次同步 paddingTop
+        setTimeout(syncMainOffset, 300);
+        setTimeout(syncMainOffset, 1000);
+
+      } catch (err) {
+        console.error(err);
+        const status = document.getElementById('rateCards');
+        if (status) status.innerHTML = '<span class="text-red-500">数据加载失败</span>';
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
