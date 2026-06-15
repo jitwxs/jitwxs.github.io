@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>加密货币资产数据看板</title>
+  <title>非标货币资产数据看板</title>
   <!-- 引入外部资源（与 dashboard.html 保持一致） -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -78,7 +78,7 @@
             <i class="fa fa-line-chart text-primary text-sm sm:text-lg"></i>
           </div>
           <div class="min-w-0">
-            <h1 class="text-sm sm:text-lg font-bold text-dark truncate">加密货币资产看板</h1>
+            <h1 class="text-sm sm:text-lg font-bold text-dark truncate">非标货币资产看板</h1>
             <p class="text-[10px] sm:text-xs text-dark-2 hidden md:block">追踪账户资产变动与托管数据</p>
           </div>
         </div>
@@ -281,10 +281,12 @@
               <thead>
                 <tr class="text-left border-b border-light-2">
                   <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap">日期</th>
-                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right">托管数量</th>
-                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right hidden sm:table-cell">估值 (RMB)</th>
-                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden md:table-cell">状态</th>
-                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden lg:table-cell">备注</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap">类型</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right">变动</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right hidden sm:table-cell">当前持有</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap text-right hidden md:table-cell">估值 (RMB)</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden lg:table-cell">状态</th>
+                  <th class="px-2 sm:px-4 py-2 sm:py-3 font-semibold whitespace-nowrap hidden xl:table-cell">备注</th>
                 </tr>
               </thead>
               <tbody id="custodyTableBody"></tbody>
@@ -299,51 +301,132 @@
 
   <footer class="border-t border-light-2 bg-white">
     <div class="container mx-auto px-3 sm:px-4 py-3 sm:py-4 text-center text-xs sm:text-sm text-dark-2">
-      <p>加密货币资产看板 · 默认显示示例数据，所有数据仅在浏览器本地处理</p>
+      <p>非标货币资产看板 · 默认显示示例数据，所有数据仅在浏览器本地处理</p>
     </div>
   </footer>
 
   <!-- ========= 主脚本 ========= -->
   <script>
     // ============ 示例数据（不包含任何真实数据） ============
-    const SAMPLE_OWN_CSV = `日期,类型,子类型,金额,备注,剩余本金
-2025-01-10,入金,初始本金,10000 RMB,示例初始本金,10000 RMB
-2025-02-15,入金,工资,8000 RMB,示例月工资,18000 RMB
-2025-03-20,出金,普通出金,2000 RMB,示例出金,16000 RMB
-2025-04-10,入金,工资,8000 RMB,示例月工资,24000 RMB
-2025-05-15,入金,项目奖,3000 USDT,示例项目奖金,45600 RMB
-2025-06-10,入金,工资,8000 RMB,示例月工资,53600 RMB
-2025-07-05,出金,普通出金,5000 RMB,示例出金,48600 RMB
-2025-08-15,入金,OKB激励,10 OKB,示例OKB激励,57100 RMB
-2025-09-10,入金,工资,8000 RMB,示例月工资,65100 RMB
-2025-10-20,出金,大额出金,15000 RMB,示例大额出金,50100 RMB
-2025-11-10,入金,工资,8000 RMB,示例月工资,58100 RMB
-2025-12-15,入金,年终奖,20000 RMB,示例年终奖,78100 RMB
-2026-01-10,入金,工资,8500 RMB,示例月工资,86600 RMB
-2026-02-10,入金,工资,8500 RMB,示例月工资,95100 RMB
-2026-03-10,入金,工资,8500 RMB,示例月工资,103600 RMB
-2026-04-10,入金,长期激励,15000 RMB,示例长期激励,118600 RMB
-2026-05-10,入金,工资,8500 RMB,示例月工资,127100 RMB
-2026-06-10,入金,工资,8500 RMB,示例月工资,135600 RMB`;
+    const SAMPLE_OWN_CSV = `日期,类型,子类型,金额,单位,备注,剩余本金
+2025-01-10,入金,初始本金,200,RMB,示例初始本金,200 RMB
+2025-02-15,入金,工资,150,RMB,示例月工资,350 RMB
+2025-03-20,出金,普通出金,50,RMB,示例出金,300 RMB
+2025-04-10,入金,工资,150,RMB,示例月工资,450 RMB
+2025-05-15,入金,项目奖,80,USDT,示例项目奖金,950 RMB
+2025-06-10,入金,工资,150,RMB,示例月工资,1100 RMB
+2025-07-05,出金,普通出金,60,RMB,示例出金,1040 RMB
+2025-08-15,入金,激励,5,OKB,示例代币激励,1150 RMB
+2025-09-10,入金,工资,150,RMB,示例月工资,1300 RMB
+2025-10-20,出金,大额出金,180,RMB,示例大额出金,1120 RMB
+2025-11-10,入金,工资,150,RMB,示例月工资,1270 RMB
+2025-12-15,入金,年终奖,300,RMB,示例年终奖,1570 RMB
+2026-01-10,入金,工资,160,RMB,示例月工资,1730 RMB
+2026-02-10,入金,工资,160,RMB,示例月工资,1890 RMB
+2026-03-10,入金,工资,160,RMB,示例月工资,2050 RMB
+2026-04-10,入金,长期激励,220,RMB,示例长期激励,2270 RMB
+2026-05-10,入金,工资,160,RMB,示例月工资,2430 RMB
+2026-06-10,入金,工资,160,RMB,示例月工资,2590 RMB`;
 
-    const SAMPLE_CUSTODY_CSV = `日期,托管数量(OKB),状态,备注
-2025-03-10,10,持有,示例托管10 OKB
-2025-06-15,25,持有,示例增加至25 OKB
-2025-09-20,15,持有,示例提取10 OKB
-2025-12-01,40,持有,示例增加至40 OKB
-2026-03-15,30,持有,示例提取10 OKB
-2026-06-01,50,持有,示例最新50 OKB`;
+    const SAMPLE_CUSTODY_CSV = `日期,类型,数量,状态,备注
+2025-02-08,黄金,0.1,持有,首次托管 0.1g 黄金
+2025-04-22,OKB,1,持有,初始 OKB 托管 1 枚
+2025-06-15,OKB,2,持有,增加 OKB 至 2 枚
+2025-09-12,黄金,0.3,持有,增持黄金至 0.3g
+2025-11-05,黄金,0.5,持有,继续增持至 0.5g`;
 
     // ============ 汇率配置 ============
+    // 默认汇率（API 失败时回退使用；1 单位货币 ≈ 多少人民币）
     const DEFAULT_RATES = {
       RMB: 1,
       USDT: 7.2,
       USD: 7.2,
       OKB: 85,
       HKD: 0.93,
+      GOLD: 780,
     };
-
+    const STORAGE_KEY = 'cryptoDashboardRates_v1';
     let currentRates = { ...DEFAULT_RATES };
+
+    // 尝试从 localStorage 恢复用户手动编辑过的汇率
+    (function loadStoredRates() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          for (const k in parsed) {
+            if (parsed[k] !== undefined && !isNaN(parsed[k])) currentRates[k] = parsed[k];
+          }
+        }
+      } catch (e) {}
+    })();
+
+    function saveRatesToStorage() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(currentRates)); } catch (e) {}
+    }
+
+    // 从公开 API 拉取实时汇率（CoinGecko = OKB/USDT/USD + freegoldapi = 黄金/USD）
+    // 两个 API 都开启了 CORS，可直接在浏览器中调用（包括 GitHub Pages）
+    // CoinGecko 公共 API 速率限制：~10-30 次/分钟，个人使用完全足够
+    async function fetchLiveRates() {
+      showStatus('正在拉取实时汇率...', 'info');
+      let fetched = false;
+
+      try {
+        // 1. CoinGecko：OKB、USDT 对 CNY 的汇率（一次请求解决）
+        const cgResp = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=okb,tether&vs_currencies=cny,usd');
+        if (cgResp.ok) {
+          const cgData = await cgResp.json();
+          if (cgData.okb && cgData.okb.cny) currentRates.OKB = cgData.okb.cny;
+          if (cgData.okb && cgData.okb.usd) currentRates.USD = cgData.okb.cny / cgData.okb.usd;
+          if (cgData.tether && cgData.tether.cny) currentRates.USDT = cgData.tether.cny;
+          fetched = true;
+        }
+      } catch (e) {}
+
+      try {
+        // 2. freegoldapi：黄金价格（USD / 盎司）→ 换算成 CNY / 克
+        // 1 金衡盎司 = 31.1035 克
+        const goldResp = await fetch('https://freegoldapi.com/data/latest.json');
+        if (goldResp.ok) {
+          const goldData = await goldResp.json();
+          if (Array.isArray(goldData) && goldData.length > 0) {
+            // 取最后一条记录（最新价格）
+            const latest = goldData[goldData.length - 1];
+            if (latest && latest.price && !isNaN(latest.price)) {
+              const usdPerGram = latest.price / 31.1035;
+              currentRates.GOLD = usdPerGram * currentRates.USDT;
+              fetched = true;
+            }
+          }
+        }
+      } catch (e) {}
+
+      saveRatesToStorage();
+      renderRateCards();
+      renderAll();
+
+      if (fetched) showStatus('汇率更新成功：OKB ≈ ¥' + numFmt(currentRates.OKB, 2) + '，黄金 ≈ ¥' + numFmt(currentRates.GOLD, 2) + '/g', 'success');
+      else showStatus('汇率获取失败，使用默认值。请稍后刷新重试。', 'warning');
+    }
+
+    // 允许用户手动编辑某个汇率（点击头部汇率标签时触发）
+    function editRate(code, label) {
+      const cur = currentRates[code];
+      const input = prompt('请输入 1 ' + label + ' ≈ 多少人民币？\n（留空或取消则使用默认值）', String(cur));
+      if (input === null) return;
+      if (input.trim() === '') {
+        currentRates[code] = DEFAULT_RATES[code];
+      } else {
+        const val = parseFloat(input);
+        if (!isNaN(val) && val > 0) currentRates[code] = val;
+        else { showStatus('输入无效："' + input + '"', 'warning'); return; }
+      }
+      saveRatesToStorage();
+      renderRateCards();
+      renderAll();
+      showStatus(label + ' 汇率已更新为 ¥' + numFmt(currentRates[code], 2), 'success');
+    }
 
     // ============ 数据状态标志 ============
     let ownDataIsSample = true;
@@ -363,26 +446,26 @@
       return Number(num).toLocaleString('zh-CN', { maximumFractionDigits: d, minimumFractionDigits: d });
     };
 
-    function parseAmount(amountStr) {
-      if (!amountStr) return { value: 0, currency: 'RMB' };
-      const trimmed = amountStr.trim();
-      const match = trimmed.match(/^([\d.]+)\s*([A-Za-z]+)?$/);
-      if (match) {
-        const value = parseFloat(match[1]) || 0;
-        const currency = (match[2] || 'RMB').toUpperCase();
-        return { value: value, currency: currency };
-      }
-      const numMatch = trimmed.match(/[\d.]+/);
-      return { value: numMatch ? parseFloat(numMatch[0]) : 0, currency: 'RMB' };
+    function getRowAmountValue(row) {
+      const val = parseFloat(row['金额']);
+      return Number.isFinite(val) ? val : 0;
     }
-
-    function toRMB(parsed) {
-      const rate = currentRates[parsed.currency] !== undefined ? currentRates[parsed.currency] : 1;
-      return parsed.value * rate;
+    function getRowAmountCurrency(row) {
+      return (row['单位'] || 'RMB').trim().toUpperCase() || 'RMB';
     }
-
-    function amountToRMB(amountStr) {
-      return toRMB(parseAmount(amountStr));
+    function getRowAmountRMB(row) {
+      const value = getRowAmountValue(row);
+      const currency = getRowAmountCurrency(row);
+      const rate = currentRates[currency] !== undefined ? currentRates[currency] : 1;
+      return value * rate;
+    }
+    function getRowAmountDisplay(row) {
+      return numFmt(getRowAmountValue(row), 2) + ' ' + getRowAmountCurrency(row);
+    }
+    function getRowPrincipal(row) {
+      const str = row['剩余本金'] || '';
+      const match = str.match(/[\d.]+/);
+      return match ? parseFloat(match[0]) || 0 : 0;
     }
 
     function parseCSV(text) {
@@ -408,6 +491,83 @@
       }
       return rows;
     }
+
+    // 托管账户字段解析（新格式：日期, 类型, 数量, 状态, 备注）
+    function getCustodyField(row, fieldType) {
+      if (!row) return '';
+      if (fieldType === 'date') return row['日期'] || '';
+      if (fieldType === 'type') return row['类型'] || '';
+      if (fieldType === 'amount') return row['数量'] || '';
+      if (fieldType === 'status') return row['状态'] || '';
+      if (fieldType === 'remark') return row['备注'] || '';
+      return '';
+    }
+
+    function getNumField(row, fieldType) {
+      const v = getCustodyField(row, fieldType);
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    // 归一化托管账户数据（新格式：按日期排序，逐行累加 OKB/黄金持仓）
+    let _custodyCache = null;
+    function normalizeCustodyData() {
+      if (!rawCustody || rawCustody.length === 0) {
+        _custodyCache = { series: [], tableRows: [] };
+        return _custodyCache;
+      }
+      if (_custodyCache && _custodyCache._len === rawCustody.length) return _custodyCache;
+
+      const sorted = rawCustody.slice().sort(function(a, b) {
+        const da = parseLocalDate(getCustodyField(a, 'date')) || new Date(0);
+        const db = parseLocalDate(getCustodyField(b, 'date')) || new Date(0);
+        return da - db;
+      });
+
+      const series = [];
+      let curOKB = 0;
+      let curGold = 0;
+      let prevOKB = 0;
+      let prevGold = 0;
+      for (let i = 0; i < sorted.length; i++) {
+        const r = sorted[i];
+        const typeRaw = (getCustodyField(r, 'type') || '').trim();
+        const type = typeRaw.toLowerCase();
+        const amount = getNumField(r, 'amount');
+        let delta = 0;
+        let holding = 0;
+        let unit = '';
+        if (type === 'okb') {
+          prevOKB = curOKB;
+          curOKB = amount;
+          delta = curOKB - prevOKB;
+          holding = curOKB;
+          unit = 'OKB';
+        } else if (type.indexOf('gold') !== -1 || type.indexOf('黄金') !== -1) {
+          prevGold = curGold;
+          curGold = amount;
+          delta = curGold - prevGold;
+          holding = curGold;
+          unit = 'g';
+        }
+        series.push({
+          date: getCustodyField(r, 'date') || '',
+          okb: curOKB,
+          gold: curGold,
+          type: typeRaw,
+          unit: unit,
+          amount: amount,
+          holding: holding,
+          delta: delta,
+          status: getCustodyField(r, 'status') || '-',
+          remark: getCustodyField(r, 'remark') || '-'
+        });
+      }
+      _custodyCache = { series: series, tableRows: series, _len: rawCustody.length };
+      return _custodyCache;
+    }
+
+    function clearCustodyCache() { _custodyCache = null; }
 
     async function loadCSV(url) {
       // 保留作为代码示例：在浏览器本地 file:// 协议下 fetch 会触发 CORS 错误
@@ -460,10 +620,11 @@
 
     function renderRateCards() {
       const currencies = [
-        { code: 'OKB', name: 'OKB Token' },
-        { code: 'USDT', name: 'USDT' },
-        { code: 'USD', name: '美元' },
-        { code: 'HKD', name: '港币' }
+        { code: 'OKB', name: 'OKB Token', label: 'OKB' },
+        { code: 'USDT', name: 'USDT', label: 'USDT' },
+        { code: 'USD', name: '美元', label: 'USD' },
+        { code: 'HKD', name: '港币', label: 'HKD' },
+        { code: 'GOLD', name: '黄金', label: '黄金/g' }
       ];
 
       const container = document.getElementById('rateCards');
@@ -471,14 +632,19 @@
       for (let i = 0; i < currencies.length; i++) {
         const cur = currencies[i];
         const rate = currentRates[cur.code] || 1;
-        html += '<span class="inline-flex items-center gap-1">' +
-          '<span class="font-medium text-dark-2">' + cur.code + '</span>' +
+        html += '<span class="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" onclick="editRate(\'' + cur.code + '\',\'' + cur.label + '\')" title="点击手动编辑 ' + cur.label + ' 汇率">' +
+          '<span class="font-medium text-dark-2">' + cur.label + '</span>' +
           '<span class="font-bold text-dark">≈ ¥' + numFmt(rate, 2) + '</span>' +
           '</span>';
         if (i < currencies.length - 1) {
           html += '<span class="text-dark opacity-30">|</span>';
         }
       }
+      // 添加刷新按钮
+      html += '<span class="text-dark opacity-30">|</span>' +
+        '<span class="inline-flex items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="fetchLiveRates()" title="从 CoinGecko / freegoldapi 拉取实时汇率">' +
+        '<i class="fa fa-refresh text-dark-2"></i>' +
+        '</span>';
       container.innerHTML = html;
     }
 
@@ -489,13 +655,13 @@
       let totalWithdrawal = 0;
       for (let i = 0; i < rawTransactions.length; i++) {
         const r = rawTransactions[i];
-        const rmb = amountToRMB(r['金额']);
+        const rmb = getRowAmountRMB(r);
         if (r['类型'] === '入金') totalDeposit += rmb;
         else if (r['类型'] === '出金') totalWithdrawal += rmb;
       }
       const netFlow = totalDeposit - totalWithdrawal;
       const lastRow = rawTransactions[rawTransactions.length - 1];
-      const currentPrincipal = lastRow ? amountToRMB(lastRow['剩余本金']) : 0;
+      const currentPrincipal = lastRow ? getRowPrincipal(lastRow) : 0;
 
       const cards = [
         { title: '当前本金', value: moneyFmt(currentPrincipal), icon: 'fa-money', color: 'primary', sub: '最近交易时的本金余额' },
@@ -528,9 +694,9 @@
 
     function renderPrincipalTrend() {
       const dates = rawTransactions.map(function(r) { return r['日期']; });
-      const principals = rawTransactions.map(function(r) { return amountToRMB(r['剩余本金']); });
+      const principals = rawTransactions.map(function(r) { return getRowPrincipal(r); });
       const amounts = rawTransactions.map(function(r) {
-        const rmb = amountToRMB(r['金额']);
+        const rmb = getRowAmountRMB(r);
         return r['类型'] === '出金' ? -rmb : rmb;
       });
 
@@ -571,7 +737,7 @@
     function renderDepositTypeChart() {
       const subTypeMap = {};
       rawTransactions.filter(function(r) { return r['类型'] === '入金'; }).forEach(function(r) {
-        const rmb = amountToRMB(r['金额']);
+        const rmb = getRowAmountRMB(r);
         if (rmb <= 0) return;
         const subType = r['子类型'] || '其他';
         subTypeMap[subType] = (subTypeMap[subType] || 0) + rmb;
@@ -605,7 +771,7 @@
       for (let i = 0; i < rawTransactions.length; i++) {
         const r = rawTransactions[i];
         const year = (r['日期'] || '').split('-')[0] || '未知';
-        const rmb = amountToRMB(r['金额']);
+        const rmb = getRowAmountRMB(r);
         if (!yearMap[year]) yearMap[year] = { deposit: 0, withdrawal: 0 };
         if (r['类型'] === '入金') yearMap[year].deposit += rmb;
         else if (r['类型'] === '出金') yearMap[year].withdrawal += rmb;
@@ -651,7 +817,7 @@
         const parts = date.split('-');
         if (parts.length < 2) continue;
         const month = parts[0] + '-' + parts[1];
-        const rmb = amountToRMB(r['金额']);
+        const rmb = getRowAmountRMB(r);
         if (!monthMap[month]) monthMap[month] = { deposit: 0, withdrawal: 0 };
         if (r['类型'] === '入金') monthMap[month].deposit += rmb;
         else if (r['类型'] === '出金') monthMap[month].withdrawal += rmb;
@@ -704,7 +870,7 @@
       let filtered = rawTransactions;
       if (typeFilter !== 'all') filtered = filtered.filter(function(r) { return r['类型'] === typeFilter; });
       if (subFilter !== 'all') filtered = filtered.filter(function(r) { return r['子类型'] === subFilter; });
-      if (curFilter !== 'all') filtered = filtered.filter(function(r) { return parseAmount(r['金额']).currency === curFilter; });
+      if (curFilter !== 'all') filtered = filtered.filter(function(r) { return getRowAmountCurrency(r) === curFilter; });
 
       // 应用最近一年筛选
       let yearFiltered = filtered;
@@ -730,8 +896,7 @@
 
       for (let i = displayData.length - 1; i >= 0; i--) {
         const r = displayData[i];
-        const parsed = parseAmount(r['金额']);
-        const principal = amountToRMB(r['剩余本金']);
+        const principal = getRowPrincipal(r);
         const isDeposit = r['类型'] === '入金';
         const typeColor = isDeposit ? 'background:#e6f7ec; color:#00B42A;' : 'background:#fdecec; color:#F53F3F;';
         const principalColor = principal >= 0 ? 'color:#1D2129;' : 'color:#F53F3F;';
@@ -739,7 +904,7 @@
           '<td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-dark-2 text-xs sm:text-sm">' + r['日期'] + '</td>' +
           '<td class="px-2 sm:px-4 py-2 sm:py-3"><span class="inline-block px-2 py-0.5 rounded-md text-xs sm:text-sm" style="' + typeColor + '">' + r['类型'] + '</span></td>' +
           '<td class="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell text-xs sm:text-sm">' + (r['子类型'] || '-') + '</td>' +
-          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-dark-2 hidden sm:table-cell text-xs sm:text-sm">' + numFmt(parsed.value, 2) + ' ' + parsed.currency + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-dark-2 hidden sm:table-cell text-xs sm:text-sm">' + getRowAmountDisplay(r) + '</td>' +
           '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-xs sm:text-sm" style="' + principalColor + '">' + moneyFmt(principal) + '</td>' +
           '</tr>';
       }
@@ -772,7 +937,7 @@
       for (let i = 0; i < rawTransactions.length; i++) {
         const r = rawTransactions[i];
         if (r['子类型'] && subTypes.indexOf(r['子类型']) === -1) subTypes.push(r['子类型']);
-        const cur = parseAmount(r['金额']).currency;
+        const cur = getRowAmountCurrency(r);
         if (currencies.indexOf(cur) === -1) currencies.push(cur);
       }
 
@@ -795,32 +960,33 @@
 
     function renderCustodySummaryCards() {
       const container = document.getElementById('custodySummaryCards');
-      if (rawCustody.length === 0) {
+      const { series } = normalizeCustodyData();
+      if (series.length === 0) {
         container.innerHTML = '<p class="text-gray-500 text-xs sm:text-sm col-span-2 sm:col-span-2 md:col-span-4 text-center py-5">暂无托管账户数据</p>';
         return;
       }
 
       const okbRate = currentRates.OKB || 1;
-      const lastRow = rawCustody[rawCustody.length - 1];
-      const currentOKB = parseFloat(lastRow['托管数量(OKB)']) || 0;
-      const currentRMB = currentOKB * okbRate;
+      const goldRate = currentRates.GOLD || 1;
+      const lastPoint = series[series.length - 1];
 
-      let maxOKB = 0;
-      let minOKB = Infinity;
-      for (let i = 0; i < rawCustody.length; i++) {
-        const okb = parseFloat(rawCustody[i]['托管数量(OKB)']) || 0;
-        if (okb > maxOKB) maxOKB = okb;
-        if (okb < minOKB) minOKB = okb;
+      const currentOKB = lastPoint.okb;
+      const currentGold = lastPoint.gold;
+      const totalRMB = currentOKB * okbRate + currentGold * goldRate;
+
+      let maxOKB = 0, maxGold = 0, maxRMB = 0;
+      for (let i = 0; i < series.length; i++) {
+        if (series[i].okb > maxOKB) maxOKB = series[i].okb;
+        if (series[i].gold > maxGold) maxGold = series[i].gold;
+        const r = series[i].okb * okbRate + series[i].gold * goldRate;
+        if (r > maxRMB) maxRMB = r;
       }
 
-      const records = rawCustody.length;
-      const lastDate = lastRow['日期'];
-
       const cards = [
-        { title: '当前托管 OKB', value: numFmt(currentOKB, 4) + ' OKB', icon: 'fa-circle-o-notch', color: 'primary', sub: '最新记录：' + lastDate },
-        { title: '当前估值 (RMB)', value: moneyFmt(currentRMB), icon: 'fa-money', color: 'success', sub: '1 OKB ≈ ¥' + numFmt(okbRate, 2) },
-        { title: '历史峰值 OKB', value: numFmt(maxOKB, 4) + ' OKB', icon: 'fa-trophy', color: 'warning', sub: moneyFmt(maxOKB * okbRate) + ' (换算)' },
-        { title: '托管记录', value: records + ' 条', icon: 'fa-file-text-o', color: 'secondary', sub: '从 ' + rawCustody[0]['日期'] + ' 起' }
+        { title: '总估值 (RMB)', value: moneyFmt(totalRMB), icon: 'fa-money', color: 'success', sub: '峰值 ' + moneyFmt(maxRMB) },
+        { title: '当前 OKB', value: numFmt(currentOKB, 2) + ' OKB', icon: 'fa-circle-o-notch', color: 'primary', sub: '约 ' + moneyFmt(currentOKB * okbRate) },
+        { title: '当前黄金', value: numFmt(currentGold, 2) + ' g', icon: 'fa-diamond', color: 'warning', sub: '约 ' + moneyFmt(currentGold * goldRate) },
+        { title: '托管记录', value: series.length + ' 条', icon: 'fa-file-text-o', color: 'secondary', sub: '自 ' + series[0].date + ' 起' }
       ];
 
       let html = '';
@@ -849,41 +1015,50 @@
       const container = document.getElementById('custodyTrendChart');
       charts.custodyTrend = echarts.init(container);
       const isMobileCustody = window.innerWidth < 768;
+      const { series } = normalizeCustodyData();
 
-      const dates = rawCustody.map(function(r) { return r['日期']; });
-      const okbAmounts = rawCustody.map(function(r) { return parseFloat(r['托管数量(OKB)']) || 0; });
+      const dates = series.map(function(p) { return p.date; });
+      const okbAmounts = series.map(function(p) { return p.okb; });
+      const goldAmounts = series.map(function(p) { return p.gold; });
       const okbRate = currentRates.OKB || 1;
-      const rmbAmounts = okbAmounts.map(function(v) { return v * okbRate; });
+      const goldRate = currentRates.GOLD || 1;
+      const rmbAmounts = okbAmounts.map(function(v, i) { return v * okbRate + goldAmounts[i] * goldRate; });
 
       charts.custodyTrend.setOption({
         tooltip: {
           trigger: 'axis',
           formatter: function(params) {
-            const d = params[0];
-            const okbVal = okbAmounts[d.dataIndex];
-            return '<div style="font-weight:bold;">' + d.axisValue + '</div>' +
-              '<div>持有：<b>' + numFmt(okbVal, 4) + ' OKB</b></div>' +
-              '<div>估值：<b>' + moneyFmt(okbVal * okbRate) + '</b></div>';
+            const idx = params[0].dataIndex;
+            const okbVal = okbAmounts[idx];
+            const goldVal = goldAmounts[idx];
+            return '<div style="font-weight:bold;">' + params[0].axisValue + '</div>' +
+              '<div>OKB：<b>' + numFmt(okbVal, 2) + '</b></div>' +
+              '<div>黄金：<b>' + numFmt(goldVal, 2) + ' g</b></div>' +
+              '<div>估值：<b>' + moneyFmt(okbVal * okbRate + goldVal * goldRate) + '</b></div>';
           }
         },
-        legend: { data: ['OKB 数量', '估值 (RMB)'], bottom: 0, textStyle: { fontSize: isMobileCustody ? 10 : 11 } },
+        legend: { data: ['OKB 数量', '黄金 (g)', '总估值 (RMB)'], bottom: 0, textStyle: { fontSize: isMobileCustody ? 10 : 11 } },
         grid: isMobileCustody
-          ? { left: 50, right: 50, top: 15, bottom: 40 }
-          : { left: 70, right: 70, top: 20, bottom: 40 },
+          ? { left: 55, right: 55, top: 15, bottom: 40 }
+          : { left: 75, right: 75, top: 20, bottom: 40 },
         xAxis: { type: 'category', data: dates, boundaryGap: false, axisLabel: { fontSize: 10, rotate: 45, hideOverlap: true } },
         yAxis: [
-          { type: 'value', name: 'OKB', position: 'left', axisLabel: { fontSize: 10, formatter: function(v) { return numFmt(v, 2); } } },
+          { type: 'value', name: '数量', position: 'left', axisLabel: { fontSize: 10, formatter: function(v) { return numFmt(v, 0); } } },
           { type: 'value', name: 'RMB', position: 'right', axisLabel: { fontSize: 10, formatter: function(v) { return Math.abs(v) >= 10000 ? (v / 10000).toFixed(1) + '万' : v; } } }
         ],
         dataZoom: [{ type: 'inside', start: 0, end: 100 }, { type: 'slider', start: 0, end: 100, height: 20, bottom: 25 }],
         series: [
           {
             name: 'OKB 数量', type: 'line', yAxisIndex: 0, data: okbAmounts, smooth: true, symbol: 'circle', symbolSize: 6,
-            lineStyle: { color: '#0FC6C2', width: 2 }, itemStyle: { color: '#0FC6C2' },
-            areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(15, 198, 194, 0.3)' }, { offset: 1, color: 'rgba(15, 198, 194, 0.02)' }]) }
+            lineStyle: { color: '#0FC6C2', width: 2 }, itemStyle: { color: '#0FC6C2' }
           },
           {
-            name: '估值 (RMB)', type: 'line', yAxisIndex: 1, data: rmbAmounts, smooth: true, symbol: 'circle', symbolSize: 4,
+            name: '黄金 (g)', type: 'line', yAxisIndex: 0, data: goldAmounts, smooth: true, symbol: 'circle', symbolSize: 6,
+            lineStyle: { color: '#FFB800', width: 2 }, itemStyle: { color: '#FFB800' },
+            areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(255, 184, 0, 0.25)' }, { offset: 1, color: 'rgba(255, 184, 0, 0.02)' }]) }
+          },
+          {
+            name: '总估值 (RMB)', type: 'line', yAxisIndex: 1, data: rmbAmounts, smooth: true, symbol: 'circle', symbolSize: 4,
             lineStyle: { color: '#165DFF', width: 2 }, itemStyle: { color: '#165DFF' }
           }
         ]
@@ -891,29 +1066,56 @@
     }
 
     function renderCustodyTable() {
-      document.getElementById('custodyCount').textContent = rawCustody.length;
+      const { tableRows } = normalizeCustodyData();
+      document.getElementById('custodyCount').textContent = tableRows.length;
       const tbody = document.getElementById('custodyTableBody');
       const okbRate = currentRates.OKB || 1;
+      const goldRate = currentRates.GOLD || 1;
 
       let html = '';
-      for (let i = rawCustody.length - 1; i >= 0; i--) {
-        const r = rawCustody[i];
-        const okb = parseFloat(r['托管数量(OKB)']) || 0;
-        const status = r['状态'] || '-';
+      for (let i = tableRows.length - 1; i >= 0; i--) {
+        const p = tableRows[i];
+        const typeLower = (p.type || '').toLowerCase();
+        const isOKB = typeLower === 'okb';
+        const isGold = typeLower.indexOf('gold') !== -1 || typeLower.indexOf('黄金') !== -1;
+        const unit = isOKB ? ' OKB' : ' g';
+        const color = isOKB ? 'text-primary' : 'text-warning';
+        const valueRMB = isOKB ? p.holding * okbRate : p.holding * goldRate;
+
+        let deltaText;
+        let deltaColor;
+        if (p.delta === 0) {
+          deltaText = '—';
+          deltaColor = 'text-dark-2';
+        } else if (p.delta > 0) {
+          deltaText = '+' + numFmt(p.delta, 2) + unit;
+          deltaColor = 'text-green-600';
+        } else {
+          deltaText = numFmt(p.delta, 2) + unit;
+          deltaColor = 'text-red-500';
+        }
+
+        const typeLabel = isOKB ? 'OKB' : '黄金';
+        const holdingText = numFmt(p.holding, 2) + unit;
+
+        const status = p.status || '-';
+        const remark = p.remark || '-';
         let statusStyle;
         if (status === '持有') statusStyle = 'background:#e6f7ec; color:#00B42A;';
         else if (status === '已提取') statusStyle = 'background:#fdecec; color:#F53F3F;';
         else statusStyle = 'background:#f5f5f5; color:#666;';
         html += '<tr class="border-b border-light-2 hover:bg-gray-50">' +
-          '<td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-dark-2 text-xs sm:text-sm">' + r['日期'] + '</td>' +
-          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-primary text-xs sm:text-sm">' + numFmt(okb, 4) + ' OKB</td>' +
-          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-dark-2 hidden sm:table-cell text-xs sm:text-sm">' + moneyFmt(okb * okbRate) + '</td>' +
-          '<td class="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell"><span class="inline-block px-2 py-0.5 rounded-md text-xs sm:text-sm" style="' + statusStyle + '">' + status + '</span></td>' +
-          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-dark-2 hidden lg:table-cell text-xs sm:text-sm">' + (r['备注'] || '-') + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-dark-2 text-xs sm:text-sm">' + p.date + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm"><span class="' + color + ' font-semibold">' + typeLabel + '</span></td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold ' + deltaColor + ' text-xs sm:text-sm">' + deltaText + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold ' + color + ' hidden sm:table-cell text-xs sm:text-sm">' + holdingText + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-right font-semibold text-dark-2 hidden md:table-cell text-xs sm:text-sm">' + moneyFmt(valueRMB) + '</td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell"><span class="inline-block px-2 py-0.5 rounded-md text-xs sm:text-sm" style="' + statusStyle + '">' + status + '</span></td>' +
+          '<td class="px-2 sm:px-4 py-2 sm:py-3 text-dark-2 hidden xl:table-cell text-xs sm:text-sm">' + remark + '</td>' +
           '</tr>';
       }
-      if (rawCustody.length === 0) {
-        html = '<tr><td colspan="2" class="px-4 py-6 sm:py-10 text-center text-dark-2 text-xs sm:text-sm">暂无托管记录</td></tr>';
+      if (tableRows.length === 0) {
+        html = '<tr><td colspan="7" class="px-4 py-6 sm:py-10 text-center text-dark-2 text-xs sm:text-sm">暂无托管记录</td></tr>';
       }
       tbody.innerHTML = html;
     }
@@ -1046,6 +1248,7 @@
           showStatus('已恢复为示例数据，共 ' + rawTransactions.length + ' 条记录', 'info');
         } else {
           rawCustody = parseCSV(SAMPLE_CUSTODY_CSV);
+          clearCustodyCache();
           custodyDataIsSample = true;
           renderCustodySummaryCards();
           renderCustodyTrendChart();
@@ -1066,6 +1269,7 @@
           showStatus('已清空自有账户数据', 'warning');
         } else {
           rawCustody = [];
+          clearCustodyCache();
           custodyDataIsSample = false;
           renderCustodySummaryCards();
           renderCustodyTrendChart();
@@ -1098,6 +1302,7 @@
             showStatus('自有账户文件导入成功，共 ' + data.length + ' 条记录', 'success');
           } else {
             rawCustody = data;
+            clearCustodyCache();
             custodyDataIsSample = false;
             renderCustodySummaryCards();
             renderCustodyTrendChart();
@@ -1119,6 +1324,7 @@
         // 1. 默认加载示例数据（不读取任何外部文件，避免数据泄露）
         rawTransactions = parseCSV(SAMPLE_OWN_CSV);
         rawCustody = parseCSV(SAMPLE_CUSTODY_CSV);
+        clearCustodyCache();
         ownDataIsSample = true;
         custodyDataIsSample = true;
 
@@ -1126,38 +1332,41 @@
         populateFilters();
         renderAll();
 
-        // 3. 初始化主内容 paddingTop（避免被 fixed header 遮挡）
+        // 3. 拉取实时汇率（CoinGecko + freegoldapi，失败自动回退默认值）
+        fetchLiveRates();
+
+        // 4. 初始化主内容 paddingTop（避免被 fixed header 遮挡）
         syncMainOffset();
 
-        // 4. 显示默认 Tab（自有账户）的数据状态
+        // 5. 显示默认 Tab（自有账户）的数据状态
         showStatus('当前显示示例数据，共 ' + rawTransactions.length + ' 条记录，可上传您的 CSV', 'info');
 
-        // 5. Tab 绑定
+        // 6. Tab 绑定
         document.getElementById('tabOwn').addEventListener('click', function() { switchTab('own'); });
         document.getElementById('tabCustody').addEventListener('click', function() { switchTab('custody'); });
 
-        // 6. 自有账户筛选绑定
+        // 7. 自有账户筛选绑定
         document.getElementById('typeFilter').addEventListener('change', renderTxTable);
         document.getElementById('subTypeFilter').addEventListener('change', renderTxTable);
         document.getElementById('currencyFilter').addEventListener('change', renderTxTable);
 
-        // 7. 查看更多（切换最近一年 / 全部 - 双向切换）
+        // 8. 查看更多（切换最近一年 / 全部 - 双向切换）
         const loadMoreBtn = document.getElementById('txLoadMore');
         loadMoreBtn.addEventListener('click', function() {
           txShowAll = !txShowAll;
           renderTxTable();
         });
 
-        // 8. 初始化统一上传功能
+        // 9. 初始化统一上传功能
         setupUnifiedUpload();
 
-        // 9. 窗口 resize：同步 paddingTop 并 resize 图表
+        // 10. 窗口 resize：同步 paddingTop 并 resize 图表
         window.addEventListener('resize', function() {
           syncMainOffset();
           resizeCharts();
         });
 
-        // 10. 字体/图片加载完成后再次同步 paddingTop
+        // 11. 字体/图片加载完成后再次同步 paddingTop
         setTimeout(syncMainOffset, 300);
         setTimeout(syncMainOffset, 1000);
 
